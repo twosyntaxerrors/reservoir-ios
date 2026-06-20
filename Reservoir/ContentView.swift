@@ -10,6 +10,8 @@ struct ReservoirHomeView: View {
     @State private var ambientPhase: Double = 0
     @State private var checkInBloom: Double = 0
     @State private var selectedTab: ReservoirTab = .today
+    @State private var showingBackdate = false
+    @State private var backdateSelection = Date()
 
     private var accent: Color { store.primaryGlow }
 
@@ -439,19 +441,51 @@ struct ReservoirHomeView: View {
     // MARK: - Actions
 
     private var checkInButton: some View {
-        Button {
-            store.checkInToday()
-            haptics.successBloom()
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.5)) { checkInBloom = 1 }
-            withAnimation(.easeOut(duration: 0.9).delay(0.25)) { checkInBloom = 0 }
-        } label: {
-            Label(store.canCheckInToday ? "Check In Today" : "Today Secured", systemImage: store.canCheckInToday ? "drop.fill" : "checkmark.seal.fill")
-                .font(.title3.weight(.black))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
+        VStack(spacing: 12) {
+            Button {
+                registerCheckIn(on: Date())
+            } label: {
+                Label(store.canCheckInToday ? "Check In Today" : "Today Secured", systemImage: store.canCheckInToday ? "drop.fill" : "checkmark.seal.fill")
+                    .font(.title3.weight(.black))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+            }
+            .buttonStyle(PrimaryButtonStyle(disabled: !store.canCheckInToday))
+            .disabled(!store.canCheckInToday)
+
+            Button {
+                backdateSelection = store.canCheckInToday ? Date() : (Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+                showingBackdate = true
+            } label: {
+                Label("Log a past day", systemImage: "calendar.badge.plus")
+                    .font(.subheadline.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+            }
+            .buttonStyle(GhostButtonStyle(tint: ReservoirStyle.cyanSoft))
         }
-        .buttonStyle(PrimaryButtonStyle(disabled: !store.canCheckInToday))
-        .disabled(!store.canCheckInToday)
+        .sheet(isPresented: $showingBackdate) {
+            BackdateSheet(
+                selection: $backdateSelection,
+                earliest: store.earliestCheckInDate,
+                isLogged: { store.isCheckedIn(on: $0) },
+                onConfirm: {
+                    registerCheckIn(on: backdateSelection)
+                    showingBackdate = false
+                },
+                onCancel: { showingBackdate = false }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private func registerCheckIn(on date: Date) {
+        guard store.canCheckIn(on: date) else { return }
+        store.checkIn(on: date)
+        haptics.successBloom()
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.5)) { checkInBloom = 1 }
+        withAnimation(.easeOut(duration: 0.9).delay(0.25)) { checkInBloom = 0 }
     }
 
     // MARK: - Collection
@@ -699,30 +733,30 @@ private struct HeroInfoTile: View {
     let tint: Color
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 11) {
             Image(systemName: systemImage)
-                .font(.headline.weight(.bold))
+                .font(.subheadline.weight(.bold))
                 .foregroundStyle(tint)
-                .frame(width: 40, height: 40)
+                .frame(width: 34, height: 34)
                 .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.caption.weight(.bold))
-                    .tracking(1.5)
+                    .font(.caption2.weight(.bold))
+                    .tracking(0.8)
                     .foregroundStyle(.white.opacity(0.50))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .minimumScaleFactor(0.7)
                 Text(value)
-                    .font(.headline.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.68)
+                    .minimumScaleFactor(0.6)
             }
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -884,6 +918,76 @@ private struct MountainSilhouette: Shape {
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.closeSubpath()
         return path
+    }
+}
+
+// MARK: - Backdate Sheet
+
+private struct BackdateSheet: View {
+    @Binding var selection: Date
+    let earliest: Date
+    let isLogged: (Date) -> Bool
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+
+    private var loggedAlready: Bool { isLogged(selection) }
+
+    var body: some View {
+        ZStack {
+            ReservoirStyle.ink.ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("LOG A DAY")
+                        .font(.caption.weight(.bold))
+                        .tracking(5)
+                        .foregroundStyle(ReservoirStyle.cyan)
+                    Text("Add a retained day")
+                        .font(.system(size: 26, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text("Pick today or any earlier day you stayed disciplined.")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+
+                DatePicker(
+                    "Day",
+                    selection: $selection,
+                    in: earliest...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .tint(ReservoirStyle.cyan)
+                .padding(14)
+                .reservoirPanel()
+
+                if loggedAlready {
+                    Label("That day is already logged.", systemImage: "checkmark.seal.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(ReservoirStyle.mint)
+                }
+
+                Spacer(minLength: 0)
+
+                Button(action: onConfirm) {
+                    Label(loggedAlready ? "Already Logged" : "Log This Day", systemImage: "drop.fill")
+                        .font(.title3.weight(.black))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                }
+                .buttonStyle(PrimaryButtonStyle(disabled: loggedAlready))
+                .disabled(loggedAlready)
+
+                Button(action: onCancel) {
+                    Text("Cancel")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(GhostButtonStyle(tint: .white.opacity(0.7)))
+            }
+            .padding(20)
+        }
     }
 }
 
