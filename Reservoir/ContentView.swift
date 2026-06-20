@@ -220,49 +220,44 @@ struct ReservoirHomeView: View {
 
                 GeometryReader { proxy in
                     let cardWidth = proxy.size.width
-                    let bottleWidth = min(cardWidth * 0.44, 220)
-                    let bottleHeight = min(proxy.size.height * 0.83, 370)
 
-                    ZStack {
-                        ReservoirSpriteView(
-                            streak: store.currentStreak,
-                            vessel: store.selectedVessel,
-                            tilt: motion.tilt,
-                            angularVelocity: motion.angularVelocity,
-                            relapsePulse: relapsePulse
-                        )
-                        .frame(width: bottleWidth, height: bottleHeight)
-                        .offset(y: 20)
-
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(alignment: .top) {
+                    ZStack(alignment: .topTrailing) {
+                        // Two columns so the status pill can never sit on top of the bottle.
+                        HStack(alignment: .top, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 14) {
                                 heroDayBlock
-                                    .frame(width: cardWidth * 0.42, alignment: .leading)
 
-                                Spacer()
-
-                                ProgressRing(
-                                    progress: store.fillProgress,
-                                    accent: ReservoirStyle.cyan,
-                                    lineWidth: 10,
-                                    label: "FILLED"
-                                )
-                                .frame(width: min(cardWidth * 0.25, 126), height: min(cardWidth * 0.25, 126))
-                                .padding(.top, 8)
-                            }
-
-                            HStack {
                                 statusPill(
-                                    relapsePulse > 0.04 ? "Zeroed out. Start clean." : store.canCheckInToday ? "Ready for today's check-in" : "Today is secured",
+                                    relapsePulse > 0.04 ? "Start clean" : store.canCheckInToday ? "Ready to check in" : "Today secured",
                                     systemImage: relapsePulse > 0.04 ? "arrow.counterclockwise" : store.canCheckInToday ? "drop.fill" : "checkmark.seal.fill"
                                 )
+
                                 Spacer(minLength: 0)
                             }
+                            .frame(width: cardWidth * 0.44, alignment: .leading)
 
-                            Spacer(minLength: 0)
+                            ReservoirSpriteView(
+                                streak: store.currentStreak,
+                                vessel: store.selectedVessel,
+                                tilt: motion.tilt,
+                                angularVelocity: motion.angularVelocity,
+                                relapsePulse: relapsePulse
+                            )
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .offset(y: 14)
                         }
-                        .padding(.horizontal, 22)
+                        .padding(.horizontal, 20)
                         .padding(.top, 26)
+
+                        ProgressRing(
+                            progress: store.fillProgress,
+                            accent: ReservoirStyle.cyan,
+                            lineWidth: 10,
+                            label: "FILLED"
+                        )
+                        .frame(width: min(cardWidth * 0.24, 116), height: min(cardWidth * 0.24, 116))
+                        .padding(.top, 30)
+                        .padding(.trailing, 20)
                     }
                 }
             }
@@ -475,7 +470,7 @@ struct ReservoirHomeView: View {
                 },
                 onCancel: { showingBackdate = false }
             )
-            .presentationDetents([.large])
+            .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
     }
@@ -925,10 +920,21 @@ private struct MountainSilhouette: Shape {
 
 private struct BackdateSheet: View {
     @Binding var selection: Date
-    let earliest: Date
     let isLogged: (Date) -> Bool
     let onConfirm: () -> Void
     let onCancel: () -> Void
+
+    /// Captured once so the range identity is stable across re-renders
+    /// (a range whose bounds recompute every render breaks date selection).
+    @State private var range: ClosedRange<Date>
+
+    init(selection: Binding<Date>, earliest: Date, isLogged: @escaping (Date) -> Bool, onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void) {
+        _selection = selection
+        self.isLogged = isLogged
+        self.onConfirm = onConfirm
+        self.onCancel = onCancel
+        _range = State(initialValue: earliest...Date())
+    }
 
     private var loggedAlready: Bool { isLogged(selection) }
 
@@ -945,7 +951,7 @@ private struct BackdateSheet: View {
                     Text("Add a retained day")
                         .font(.system(size: 26, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("Pick today or any earlier day you stayed disciplined.")
+                    Text("Spin to today or any earlier day you stayed disciplined.")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.white.opacity(0.6))
                 }
@@ -953,12 +959,16 @@ private struct BackdateSheet: View {
                 DatePicker(
                     "Day",
                     selection: $selection,
-                    in: earliest...Date(),
+                    in: range,
                     displayedComponents: .date
                 )
-                .datePickerStyle(.graphical)
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+                .colorScheme(.dark)
+                .frame(maxWidth: .infinity)
                 .tint(ReservoirStyle.cyan)
-                .padding(14)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 14)
                 .reservoirPanel()
 
                 if loggedAlready {

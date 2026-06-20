@@ -38,8 +38,6 @@ final class ReservoirScene: SKScene {
     private let liquidHighlightNode = SKShapeNode()
     private let glowNode = SKShapeNode(circleOfRadius: 150)
     private let rimNode = SKShapeNode()
-    private let glassHighlightNode = SKShapeNode()
-    private let baseHighlightNode = SKShapeNode()
     private let crackNode = SKShapeNode()
     private let particleContainer = SKNode()
     private let bubbleContainer = SKNode()
@@ -142,28 +140,12 @@ final class ReservoirScene: SKScene {
         innerGlassNode.blendMode = .add
         addChild(innerGlassNode)
 
-        glassHighlightNode.zPosition = 10
-        glassHighlightNode.fillColor = .clear
-        glassHighlightNode.strokeColor = .white.withAlphaComponent(0.38)
-        glassHighlightNode.lineWidth = 1.5
-        glassHighlightNode.lineCap = .round
-        glassHighlightNode.blendMode = .add
-        addChild(glassHighlightNode)
-
         rimNode.zPosition = 11
         rimNode.fillColor = .clear
         rimNode.strokeColor = .white.withAlphaComponent(0.66)
         rimNode.lineWidth = 1.4
         rimNode.blendMode = .add
         addChild(rimNode)
-
-        baseHighlightNode.zPosition = 11
-        baseHighlightNode.fillColor = .clear
-        baseHighlightNode.strokeColor = .white.withAlphaComponent(0.24)
-        baseHighlightNode.lineWidth = 1.2
-        baseHighlightNode.lineCap = .round
-        baseHighlightNode.blendMode = .add
-        addChild(baseHighlightNode)
 
         crackNode.zPosition = 12
         crackNode.fillColor = .clear
@@ -179,8 +161,6 @@ final class ReservoirScene: SKScene {
         vesselNode.path = path
         innerGlassNode.path = path
         rimNode.path = rimPath(in: drawingRect())
-        glassHighlightNode.path = glassHighlightPath(in: drawingRect())
-        baseHighlightNode.path = baseHighlightPath(in: drawingRect())
 
         let rect = drawingRect()
         glowNode.path = CGPath(ellipseIn: CGRect(x: rect.minX + rect.width * 0.12, y: rect.minY - rect.height * 0.02, width: rect.width * 0.76, height: rect.height * 0.09), transform: nil)
@@ -355,25 +335,5 @@ final class ReservoirScene: SKScene {
         let neckW = vessel == .cosmic ? rect.width * 0.15 : rect.width * 0.19
         let rimHeight = rect.height * 0.018
         return CGPath(ellipseIn: CGRect(x: cx - neckW / 2, y: rect.maxY - rimHeight / 2, width: neckW, height: rimHeight), transform: nil)
-    }
-
-    private func glassHighlightPath(in rect: CGRect) -> CGPath {
-        let path = CGMutablePath()
-        let cx = rect.midX
-        path.move(to: CGPoint(x: cx - rect.width * 0.27, y: rect.maxY - rect.height * 0.28))
-        path.addCurve(to: CGPoint(x: cx - rect.width * 0.31, y: rect.midY - rect.height * 0.10), control1: CGPoint(x: cx - rect.width * 0.37, y: rect.maxY - rect.height * 0.38), control2: CGPoint(x: cx - rect.width * 0.32, y: rect.midY + rect.height * 0.12))
-        path.addCurve(to: CGPoint(x: cx - rect.width * 0.22, y: rect.minY + rect.height * 0.18), control1: CGPoint(x: cx - rect.width * 0.31, y: rect.midY - rect.height * 0.26), control2: CGPoint(x: cx - rect.width * 0.29, y: rect.minY + rect.height * 0.28))
-        path.move(to: CGPoint(x: cx + rect.width * 0.27, y: rect.maxY - rect.height * 0.28))
-        path.addCurve(to: CGPoint(x: cx + rect.width * 0.31, y: rect.midY - rect.height * 0.10), control1: CGPoint(x: cx + rect.width * 0.37, y: rect.maxY - rect.height * 0.38), control2: CGPoint(x: cx + rect.width * 0.32, y: rect.midY + rect.height * 0.12))
-        path.addCurve(to: CGPoint(x: cx + rect.width * 0.22, y: rect.minY + rect.height * 0.18), control1: CGPoint(x: cx + rect.width * 0.31, y: rect.midY - rect.height * 0.26), control2: CGPoint(x: cx + rect.width * 0.29, y: rect.minY + rect.height * 0.28))
-        return path
-    }
-
-    private func baseHighlightPath(in rect: CGRect) -> CGPath {
-        let path = CGMutablePath()
-        let cx = rect.midX
-        path.move(to: CGPoint(x: cx - rect.width * 0.20, y: rect.minY + rect.height * 0.11))
-        path.addQuadCurve(to: CGPoint(x: cx + rect.width * 0.20, y: rect.minY + rect.height * 0.11), control: CGPoint(x: cx, y: rect.minY + rect.height * 0.07))
-        return path
     }
 }
