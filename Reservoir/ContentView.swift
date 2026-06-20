@@ -221,43 +221,43 @@ struct ReservoirHomeView: View {
                 GeometryReader { proxy in
                     let cardWidth = proxy.size.width
 
-                    ZStack(alignment: .topTrailing) {
-                        // Two columns so the status pill can never sit on top of the bottle.
-                        HStack(alignment: .top, spacing: 8) {
-                            VStack(alignment: .leading, spacing: 14) {
-                                heroDayBlock
+                    ZStack {
+                        // The bottle is the centered hero. Metadata flanks it in the
+                        // gutters (top-left + top-right) and is never drawn on top of it.
+                        ReservoirSpriteView(
+                            streak: store.currentStreak,
+                            vessel: store.selectedVessel,
+                            tilt: motion.tilt,
+                            angularVelocity: motion.angularVelocity,
+                            relapsePulse: relapsePulse
+                        )
+                        .frame(width: min(cardWidth * 0.40, 178), height: 300)
+                        .offset(x: cardWidth * 0.09, y: 8)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                                statusPill(
-                                    relapsePulse > 0.04 ? "Start clean" : store.canCheckInToday ? "Ready to check in" : "Today secured",
-                                    systemImage: relapsePulse > 0.04 ? "arrow.counterclockwise" : store.canCheckInToday ? "drop.fill" : "checkmark.seal.fill"
-                                )
+                        VStack(alignment: .leading, spacing: 14) {
+                            heroDayBlock
 
-                                Spacer(minLength: 0)
-                            }
-                            .frame(width: cardWidth * 0.44, alignment: .leading)
-
-                            ReservoirSpriteView(
-                                streak: store.currentStreak,
-                                vessel: store.selectedVessel,
-                                tilt: motion.tilt,
-                                angularVelocity: motion.angularVelocity,
-                                relapsePulse: relapsePulse
+                            statusPill(
+                                relapsePulse > 0.04 ? "Start clean" : store.canCheckInToday ? "Ready to check in" : "Today secured",
+                                systemImage: relapsePulse > 0.04 ? "arrow.counterclockwise" : store.canCheckInToday ? "drop.fill" : "checkmark.seal.fill"
                             )
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .offset(y: 14)
                         }
-                        .padding(.horizontal, 20)
+                        .frame(width: cardWidth * 0.37, alignment: .leading)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .padding(.leading, 20)
                         .padding(.top, 26)
 
                         ProgressRing(
                             progress: store.fillProgress,
                             accent: ReservoirStyle.cyan,
-                            lineWidth: 10,
+                            lineWidth: 9,
                             label: "FILLED"
                         )
-                        .frame(width: min(cardWidth * 0.24, 116), height: min(cardWidth * 0.24, 116))
-                        .padding(.top, 30)
+                        .frame(width: min(cardWidth * 0.21, 104), height: min(cardWidth * 0.21, 104))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                         .padding(.trailing, 20)
+                        .padding(.top, 28)
                     }
                 }
             }

@@ -95,12 +95,17 @@ final class ReservoirScene: SKScene {
         redrawCracks()
     }
 
+    // Luminous glass palette (matches the glowing cyan target look).
+    private let glassCyan = SKColor(red: 0.62, green: 0.90, blue: 1.0, alpha: 1.0)
+    private let deepCyan = SKColor(red: 0.30, green: 0.78, blue: 1.0, alpha: 1.0)
+
     private func setupNodes() {
+        // Pool of cyan light the bottle sits on.
         glowNode.zPosition = 0
-        glowNode.fillColor = .cyan.withAlphaComponent(0.10)
+        glowNode.fillColor = deepCyan.withAlphaComponent(0.22)
         glowNode.strokeColor = .clear
         glowNode.blendMode = .add
-        glowNode.glowWidth = 34
+        glowNode.glowWidth = 46
         addChild(glowNode)
 
         particleContainer.zPosition = 1
@@ -118,32 +123,37 @@ final class ReservoirScene: SKScene {
         addChild(bubbleContainer)
 
         liquidHighlightNode.zPosition = 5
-        liquidHighlightNode.strokeColor = .white.withAlphaComponent(0.58)
+        liquidHighlightNode.strokeColor = SKColor(red: 0.78, green: 0.97, blue: 1.0, alpha: 0.95)
         liquidHighlightNode.lineWidth = 2
         liquidHighlightNode.fillColor = .clear
         liquidHighlightNode.blendMode = .add
+        liquidHighlightNode.glowWidth = 3
         // Clip the surface highlight to the vessel so the wavy line never
         // extends beyond the glass (the source of the squiggle artifact).
         liquidCropNode.addChild(liquidHighlightNode)
 
-        vesselNode.zPosition = 8
-        vesselNode.fillColor = .white.withAlphaComponent(0.025)
-        vesselNode.strokeColor = .white.withAlphaComponent(0.62)
-        vesselNode.lineWidth = 1.6
-        vesselNode.glowWidth = 1.0
-        addChild(vesselNode)
-
-        innerGlassNode.zPosition = 9
+        // Soft cyan glow halo just inside the glass, giving it volume.
+        innerGlassNode.zPosition = 7
         innerGlassNode.fillColor = .clear
-        innerGlassNode.strokeColor = .white.withAlphaComponent(0.14)
-        innerGlassNode.lineWidth = 4
+        innerGlassNode.strokeColor = deepCyan.withAlphaComponent(0.20)
+        innerGlassNode.lineWidth = 7
+        innerGlassNode.glowWidth = 9
         innerGlassNode.blendMode = .add
         addChild(innerGlassNode)
 
+        // Main glass outline — luminous cyan with a subtle glass tint fill.
+        vesselNode.zPosition = 8
+        vesselNode.fillColor = deepCyan.withAlphaComponent(0.05)
+        vesselNode.strokeColor = glassCyan.withAlphaComponent(0.95)
+        vesselNode.lineWidth = 2.2
+        vesselNode.glowWidth = 6
+        addChild(vesselNode)
+
         rimNode.zPosition = 11
         rimNode.fillColor = .clear
-        rimNode.strokeColor = .white.withAlphaComponent(0.66)
-        rimNode.lineWidth = 1.4
+        rimNode.strokeColor = SKColor(red: 0.80, green: 0.97, blue: 1.0, alpha: 0.95)
+        rimNode.lineWidth = 1.8
+        rimNode.glowWidth = 3
         rimNode.blendMode = .add
         addChild(rimNode)
 
@@ -163,13 +173,14 @@ final class ReservoirScene: SKScene {
         rimNode.path = rimPath(in: drawingRect())
 
         let rect = drawingRect()
-        glowNode.path = CGPath(ellipseIn: CGRect(x: rect.minX + rect.width * 0.12, y: rect.minY - rect.height * 0.02, width: rect.width * 0.76, height: rect.height * 0.09), transform: nil)
+        let glow = CGFloat(glowStrength(for: streak))
+        glowNode.path = CGPath(ellipseIn: CGRect(x: rect.minX + rect.width * 0.16, y: rect.minY - rect.height * 0.03, width: rect.width * 0.68, height: rect.height * 0.10), transform: nil)
         glowNode.position = .zero
-        glowNode.xScale = 1.0 + CGFloat(glowStrength(for: streak)) * 0.12
-        glowNode.yScale = 1.0 + CGFloat(glowStrength(for: streak)) * 0.08
+        glowNode.xScale = 1.0 + glow * 0.18
+        glowNode.yScale = 1.0 + glow * 0.10
 
-        vesselNode.strokeColor = .white.withAlphaComponent(0.58 + CGFloat(glowStrength(for: streak)) * 0.18)
-        rimNode.strokeColor = .white.withAlphaComponent(0.56 + CGFloat(glowStrength(for: streak)) * 0.16)
+        vesselNode.strokeColor = glassCyan.withAlphaComponent(0.82 + glow * 0.15)
+        innerGlassNode.strokeColor = deepCyan.withAlphaComponent(0.16 + glow * 0.14)
     }
 
     private func redrawLiquid(time: CGFloat) {
@@ -202,8 +213,8 @@ final class ReservoirScene: SKScene {
         maskNode.strokeColor = .clear
         liquidCropNode.maskNode = maskNode
         liquidNode.path = path
-        liquidNode.fillColor = vessel.liquidColors.first?.withAlphaComponent(0.72) ?? .cyan
-        liquidNode.glowWidth = 10 * CGFloat(glowStrength(for: streak))
+        liquidNode.fillColor = (vessel.liquidColors.first ?? deepCyan).withAlphaComponent(0.62)
+        liquidNode.glowWidth = 6 + 10 * CGFloat(glowStrength(for: streak))
 
         let highlight = CGMutablePath()
         if let first = surfacePoints.first { highlight.move(to: first) }
@@ -277,14 +288,14 @@ final class ReservoirScene: SKScene {
         for child in particleContainer.children {
             let seed = child.userData?["seed"] as? CGFloat ?? 0
             let angle = seed * 1.77 + time / (2.4 + seed * 0.04)
-            let orbit = rect.width * (0.2 + (seed.truncatingRemainder(dividingBy: 7) / 7.0) * 0.28)
+            let orbit = rect.width * (0.08 + (seed.truncatingRemainder(dividingBy: 7) / 7.0) * 0.15)
             child.position = CGPoint(
-                x: cos(angle) * orbit * (0.52 + glow * 0.46) + CGFloat(tilt.x) * 12,
-                y: sin(angle * 0.82 + seed) * rect.height * 0.28 - rect.height * 0.03 + CGFloat(tilt.y) * 7
+                x: cos(angle) * orbit * (0.6 + glow * 0.4) + CGFloat(tilt.x) * 10,
+                y: sin(angle * 0.82 + seed) * rect.height * 0.22 + rect.height * 0.06 + CGFloat(tilt.y) * 6
             )
-            child.alpha = 0.22 + glow * 0.58
+            child.alpha = 0.2 + glow * 0.5
         }
-        glowNode.fillColor = (vessel.liquidColors.first ?? .cyan).withAlphaComponent(0.10 + glow * 0.12)
+        glowNode.fillColor = (vessel.liquidColors.first ?? deepCyan).withAlphaComponent(0.18 + glow * 0.16)
     }
 
     private func animateBubbles(time: CGFloat) {
@@ -308,32 +319,56 @@ final class ReservoirScene: SKScene {
         return CGRect(x: -w / 2, y: -h / 2, width: w, height: h)
     }
 
+    private func neckWidth(in rect: CGRect) -> CGFloat {
+        rect.width * (vessel == .cosmic ? 0.18 : 0.22)
+    }
+
+    /// A clean, rounded "milk bottle": short narrow neck, rounded shoulders,
+    /// a wide gently bowed body, and a softly rounded base.
     private func vesselPath(in rect: CGRect) -> CGPath {
         let path = CGMutablePath()
         let cx = rect.midX
+        let w = rect.width
+        let h = rect.height
         let top = rect.maxY
-        let neckW = vessel == .cosmic ? rect.width * 0.15 : rect.width * 0.19
-        let shoulderY = rect.maxY - rect.height * 0.22
-        let bodyTopW = vessel == .dragon ? rect.width * 0.52 : rect.width * 0.45
-        let bodyMidW = vessel == .cosmic ? rect.width * 0.76 : rect.width * 0.66
-        let bottomY = rect.minY + rect.height * 0.08
-        let bottomW = vessel == .alchemist ? rect.width * 0.45 : rect.width * 0.52
+
+        let neckW = neckWidth(in: rect)
+        let neckBaseY = top - h * 0.11
+        let bodyW = w * (vessel == .dragon ? 0.74 : 0.70)
+        let shoulderEndY = top - h * 0.27
+        let bodyBottomY = rect.minY + h * 0.12
 
         path.move(to: CGPoint(x: cx - neckW / 2, y: top))
         path.addLine(to: CGPoint(x: cx + neckW / 2, y: top))
-        path.addCurve(to: CGPoint(x: cx + bodyTopW / 2, y: shoulderY), control1: CGPoint(x: cx + neckW / 2, y: top - rect.height * 0.09), control2: CGPoint(x: cx + bodyTopW / 2, y: shoulderY + rect.height * 0.04))
-        path.addCurve(to: CGPoint(x: cx + bottomW / 2, y: bottomY + rect.height * 0.06), control1: CGPoint(x: cx + bodyMidW / 2, y: rect.maxY - rect.height * 0.34), control2: CGPoint(x: cx + bodyMidW / 2, y: rect.minY + rect.height * 0.29))
-        path.addQuadCurve(to: CGPoint(x: cx - bottomW / 2, y: bottomY + rect.height * 0.06), control: CGPoint(x: cx, y: bottomY - rect.height * 0.02))
-        path.addCurve(to: CGPoint(x: cx - bodyTopW / 2, y: shoulderY), control1: CGPoint(x: cx - bodyMidW / 2, y: rect.minY + rect.height * 0.29), control2: CGPoint(x: cx - bodyMidW / 2, y: rect.maxY - rect.height * 0.34))
-        path.addCurve(to: CGPoint(x: cx - neckW / 2, y: top), control1: CGPoint(x: cx - bodyTopW / 2, y: shoulderY + rect.height * 0.04), control2: CGPoint(x: cx - neckW / 2, y: top - rect.height * 0.09))
+        path.addLine(to: CGPoint(x: cx + neckW / 2, y: neckBaseY))
+        // Right shoulder out to the body.
+        path.addCurve(to: CGPoint(x: cx + bodyW / 2, y: shoulderEndY),
+                      control1: CGPoint(x: cx + neckW / 2 + w * 0.02, y: neckBaseY - h * 0.03),
+                      control2: CGPoint(x: cx + bodyW / 2, y: shoulderEndY + h * 0.07))
+        // Right body, gently bowed, down to the lower corner.
+        path.addCurve(to: CGPoint(x: cx + bodyW / 2, y: bodyBottomY),
+                      control1: CGPoint(x: cx + bodyW / 2 + w * 0.015, y: top - h * 0.50),
+                      control2: CGPoint(x: cx + bodyW / 2 + w * 0.005, y: bodyBottomY + h * 0.12))
+        // Rounded base across to the left lower corner.
+        path.addQuadCurve(to: CGPoint(x: cx - bodyW / 2, y: bodyBottomY),
+                          control: CGPoint(x: cx, y: rect.minY))
+        // Left body up.
+        path.addCurve(to: CGPoint(x: cx - bodyW / 2, y: shoulderEndY),
+                      control1: CGPoint(x: cx - bodyW / 2 - w * 0.005, y: bodyBottomY + h * 0.12),
+                      control2: CGPoint(x: cx - bodyW / 2 - w * 0.015, y: top - h * 0.50))
+        // Left shoulder in to the neck.
+        path.addCurve(to: CGPoint(x: cx - neckW / 2, y: neckBaseY),
+                      control1: CGPoint(x: cx - bodyW / 2, y: shoulderEndY + h * 0.07),
+                      control2: CGPoint(x: cx - neckW / 2 - w * 0.02, y: neckBaseY - h * 0.03))
+        path.addLine(to: CGPoint(x: cx - neckW / 2, y: top))
         path.closeSubpath()
         return path
     }
 
     private func rimPath(in rect: CGRect) -> CGPath {
         let cx = rect.midX
-        let neckW = vessel == .cosmic ? rect.width * 0.15 : rect.width * 0.19
-        let rimHeight = rect.height * 0.018
+        let neckW = neckWidth(in: rect)
+        let rimHeight = rect.height * 0.02
         return CGPath(ellipseIn: CGRect(x: cx - neckW / 2, y: rect.maxY - rimHeight / 2, width: neckW, height: rimHeight), transform: nil)
     }
 }
