@@ -188,9 +188,10 @@ struct ReservoirHomeView: View {
                     Text("made visible.")
                         .foregroundStyle(ReservoirStyle.cyanSoft)
                 }
-                .font(.system(size: 43, weight: .black, design: .rounded))
+                .font(.system(size: 36, weight: .black, design: .rounded))
                 .lineLimit(1)
-                .minimumScaleFactor(0.72)
+                .minimumScaleFactor(0.6)
+                .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 8)
@@ -221,10 +222,20 @@ struct ReservoirHomeView: View {
                     let bottleHeight = min(proxy.size.height * 0.83, 370)
 
                     ZStack {
-                        VStack {
+                        ReservoirSpriteView(
+                            streak: store.currentStreak,
+                            vessel: store.selectedVessel,
+                            tilt: motion.tilt,
+                            angularVelocity: motion.angularVelocity,
+                            relapsePulse: relapsePulse
+                        )
+                        .frame(width: bottleWidth, height: bottleHeight)
+                        .offset(y: 20)
+
+                        VStack(alignment: .leading, spacing: 16) {
                             HStack(alignment: .top) {
                                 heroDayBlock
-                                    .frame(width: cardWidth * 0.34, alignment: .leading)
+                                    .frame(width: cardWidth * 0.42, alignment: .leading)
 
                                 Spacer()
 
@@ -237,33 +248,19 @@ struct ReservoirHomeView: View {
                                 .frame(width: min(cardWidth * 0.25, 126), height: min(cardWidth * 0.25, 126))
                                 .padding(.top, 8)
                             }
-                            Spacer()
-                        }
-                        .padding(.horizontal, 22)
-                        .padding(.top, 26)
 
-                        ReservoirSpriteView(
-                            streak: store.currentStreak,
-                            vessel: store.selectedVessel,
-                            tilt: motion.tilt,
-                            angularVelocity: motion.angularVelocity,
-                            relapsePulse: relapsePulse
-                        )
-                        .frame(width: bottleWidth, height: bottleHeight)
-                        .offset(y: 20)
-
-                        VStack {
-                            Spacer()
                             HStack {
                                 statusPill(
                                     relapsePulse > 0.04 ? "Zeroed out. Start clean." : store.canCheckInToday ? "Ready for today's check-in" : "Today is secured",
                                     systemImage: relapsePulse > 0.04 ? "arrow.counterclockwise" : store.canCheckInToday ? "drop.fill" : "checkmark.seal.fill"
                                 )
-                                .padding(.leading, 22)
-                                .padding(.bottom, 48)
-                                Spacer()
+                                Spacer(minLength: 0)
                             }
+
+                            Spacer(minLength: 0)
                         }
+                        .padding(.horizontal, 22)
+                        .padding(.top, 26)
                     }
                 }
             }
