@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "mobile-ios-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/ui-design/skills/mobile-ios-design/SKILL.md",
+      "computedHash": "3902f919488d8ddc983e157bbcd5f16b739b84eeaab57002bf52b7f9601ed6ad"
+    },
+    "remove-ai-slop": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "skillPath": "remove-ai-slop/SKILL.md",
+      "computedHash": "2566c85059a07ffc9c35196ef51a0ff5c73bed7f726e4e7b47e94853be23a229"
+    }
+  }
+}

@@ -102,10 +102,10 @@ final class ReservoirScene: SKScene {
     private func setupNodes() {
         // Pool of cyan light the bottle sits on.
         glowNode.zPosition = 0
-        glowNode.fillColor = deepCyan.withAlphaComponent(0.22)
+        glowNode.fillColor = deepCyan.withAlphaComponent(0.16)
         glowNode.strokeColor = .clear
         glowNode.blendMode = .add
-        glowNode.glowWidth = 46
+        glowNode.glowWidth = 32
         addChild(glowNode)
 
         particleContainer.zPosition = 1
@@ -135,18 +135,18 @@ final class ReservoirScene: SKScene {
         // Soft cyan glow halo just inside the glass, giving it volume.
         innerGlassNode.zPosition = 7
         innerGlassNode.fillColor = .clear
-        innerGlassNode.strokeColor = deepCyan.withAlphaComponent(0.20)
-        innerGlassNode.lineWidth = 7
-        innerGlassNode.glowWidth = 9
+        innerGlassNode.strokeColor = deepCyan.withAlphaComponent(0.12)
+        innerGlassNode.lineWidth = 6
+        innerGlassNode.glowWidth = 4
         innerGlassNode.blendMode = .add
         addChild(innerGlassNode)
 
-        // Main glass outline — luminous cyan with a subtle glass tint fill.
+        // Main glass outline — clean cyan with a subtle glass tint fill.
         vesselNode.zPosition = 8
         vesselNode.fillColor = deepCyan.withAlphaComponent(0.05)
-        vesselNode.strokeColor = glassCyan.withAlphaComponent(0.95)
-        vesselNode.lineWidth = 2.2
-        vesselNode.glowWidth = 6
+        vesselNode.strokeColor = glassCyan.withAlphaComponent(0.85)
+        vesselNode.lineWidth = 2.0
+        vesselNode.glowWidth = 2.5
         addChild(vesselNode)
 
         rimNode.zPosition = 11
@@ -179,8 +179,8 @@ final class ReservoirScene: SKScene {
         glowNode.xScale = 1.0 + glow * 0.18
         glowNode.yScale = 1.0 + glow * 0.10
 
-        vesselNode.strokeColor = glassCyan.withAlphaComponent(0.82 + glow * 0.15)
-        innerGlassNode.strokeColor = deepCyan.withAlphaComponent(0.16 + glow * 0.14)
+        vesselNode.strokeColor = glassCyan.withAlphaComponent(0.72 + glow * 0.13)
+        innerGlassNode.strokeColor = deepCyan.withAlphaComponent(0.10 + glow * 0.10)
     }
 
     private func redrawLiquid(time: CGFloat) {
@@ -295,7 +295,7 @@ final class ReservoirScene: SKScene {
             )
             child.alpha = 0.2 + glow * 0.5
         }
-        glowNode.fillColor = (vessel.liquidColors.first ?? deepCyan).withAlphaComponent(0.18 + glow * 0.16)
+        glowNode.fillColor = (vessel.liquidColors.first ?? deepCyan).withAlphaComponent(0.12 + glow * 0.12)
     }
 
     private func animateBubbles(time: CGFloat) {

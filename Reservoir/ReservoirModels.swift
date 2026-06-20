@@ -45,9 +45,9 @@ enum VesselSkin: String, CaseIterable, Identifiable {
     var description: String {
         switch self {
         case .apprentice: return "Clear hand-blown glass. A quiet beginning."
-        case .alchemist: return "Etched crystal geometry that amplifies glow."
-        case .dragon: return "Heavy obsidian glass with molten resonance."
-        case .cosmic: return "A void-glass relic bending starlight inward."
+        case .alchemist: return "Etched crystal. Sharper light."
+        case .dragon: return "Heavy obsidian glass."
+        case .cosmic: return "Void glass that pulls light inward."
         }
     }
 

@@ -7,7 +7,6 @@ struct ReservoirHomeView: View {
     @EnvironmentObject private var haptics: HapticsEngine
     @State private var relapsePulse: Double = 0
     @State private var showingReset = false
-    @State private var ambientPhase: Double = 0
     @State private var checkInBloom: Double = 0
     @State private var selectedTab: ReservoirTab = .today
     @State private var showingBackdate = false
@@ -36,9 +35,6 @@ struct ReservoirHomeView: View {
         .onAppear {
             motion.start()
             haptics.prepare()
-            withAnimation(.easeInOut(duration: 11).repeatForever(autoreverses: true)) {
-                ambientPhase = 1
-            }
         }
         .onDisappear { motion.stop() }
         .alert("Reset everything to 0?", isPresented: $showingReset) {
@@ -91,7 +87,7 @@ struct ReservoirHomeView: View {
                             .font(.system(size: 34, weight: .bold))
                             .foregroundStyle(accent)
                             .frame(width: 56, height: 56)
-                            .background(accent.opacity(0.14), in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
+                            .background(accent.opacity(0.14), in: RoundedRectangle(cornerRadius: ReservoirStyle.iconRadius, style: .continuous))
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Reservoir")
@@ -158,7 +154,7 @@ struct ReservoirHomeView: View {
 
             LinearGradient(
                 colors: [
-                    ReservoirStyle.cyan.opacity(0.16 + ambientPhase * 0.05),
+                    ReservoirStyle.cyan.opacity(0.16),
                     .clear,
                     ReservoirStyle.cyanDeep.opacity(0.14)
                 ],
@@ -243,7 +239,7 @@ struct ReservoirHomeView: View {
                                 systemImage: relapsePulse > 0.04 ? "arrow.counterclockwise" : store.canCheckInToday ? "drop.fill" : "checkmark.seal.fill"
                             )
                         }
-                        .frame(width: cardWidth * 0.37, alignment: .leading)
+                        .frame(width: cardWidth * 0.39, alignment: .leading)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .padding(.leading, 20)
                         .padding(.top, 26)
@@ -270,7 +266,7 @@ struct ReservoirHomeView: View {
                 HeroInfoTile(title: "VESSEL", value: store.selectedVessel.title, systemImage: "flask.fill", tint: ReservoirStyle.cyan)
                 Divider()
                     .overlay(.white.opacity(0.08))
-                HeroInfoTile(title: "NEXT UNLOCK", value: store.nextAchievementTitle, systemImage: "flag.fill", tint: ReservoirStyle.gold)
+                HeroInfoTile(title: "NEXT UNLOCK", value: store.nextAchievementTitle, systemImage: "flag.fill", tint: ReservoirStyle.cyan)
             }
             .frame(height: 86)
             .background(.white.opacity(0.018))
@@ -279,51 +275,15 @@ struct ReservoirHomeView: View {
     }
 
     private var heroAtmosphere: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    .white.opacity(0.06),
-                    ReservoirStyle.panel.opacity(0.35),
-                    .black.opacity(0.10)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            .clear,
-                            ReservoirStyle.cyan.opacity(0.08 + store.glowProgress * 0.07),
-                            .clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .blur(radius: 24)
-                .frame(width: 210, height: 300)
-                .offset(x: 18, y: 42)
-                .scaleEffect(1.0 + checkInBloom * 0.04)
-
-            Ellipse()
-                .fill(ReservoirStyle.cyan.opacity(0.18 + checkInBloom * 0.10))
-                .blur(radius: 18)
-                .frame(width: 190, height: 24)
-                .offset(x: 16, y: 150)
-
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [.clear, ReservoirStyle.cyan.opacity(0.10), .clear],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(height: 1)
-                .offset(y: 132)
-        }
+        LinearGradient(
+            colors: [
+                .white.opacity(0.05),
+                ReservoirStyle.panel.opacity(0.32),
+                .black.opacity(0.10)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 
     private var heroDayBlock: some View {
@@ -352,18 +312,18 @@ struct ReservoirHomeView: View {
     }
 
     private func statusPill(_ text: String, systemImage: String) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: systemImage)
-                .font(.footnote.weight(.bold))
+                .font(.caption2.weight(.bold))
                 .foregroundStyle(ReservoirStyle.cyan)
             Text(text)
-                .font(.footnote.weight(.bold))
+                .font(.caption2.weight(.bold))
                 .foregroundStyle(.white.opacity(0.9))
                 .lineLimit(1)
-                .minimumScaleFactor(0.76)
+                .minimumScaleFactor(0.6)
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(.black.opacity(0.24), in: Capsule())
         .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 1))
     }
@@ -372,9 +332,8 @@ struct ReservoirHomeView: View {
 
     private var statsGrid: some View {
         HStack(spacing: 10) {
-            StatTile(value: "\(store.longestStreak)", label: "Longest streak", systemImage: "drop", tint: ReservoirStyle.gold)
+            StatTile(value: "\(store.longestStreak)", label: "Longest streak", systemImage: "drop", tint: ReservoirStyle.cyan)
             StatTile(value: "\(store.totalRetentionDays)", label: "Total days", systemImage: "calendar.badge.checkmark", tint: ReservoirStyle.cyan)
-            StatTile(value: "\(Int(store.fillProgress * 100))%", label: "Filled", systemImage: "drop.circle", tint: ReservoirStyle.mint)
         }
     }
 
@@ -431,7 +390,6 @@ struct ReservoirHomeView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(.white.opacity(0.10), lineWidth: 1))
-        .shadow(color: .black.opacity(0.28), radius: 14, y: 8)
     }
 
     // MARK: - Actions
@@ -464,14 +422,9 @@ struct ReservoirHomeView: View {
             BackdateSheet(
                 selection: $backdateSelection,
                 earliest: store.earliestCheckInDate,
-                isLogged: { store.isCheckedIn(on: $0) },
                 unloggedThroughToday: { store.unloggedDaysThroughToday(from: $0) },
                 onCatchUp: {
                     bloomCheckIn { store.checkInThroughToday(from: backdateSelection) }
-                    showingBackdate = false
-                },
-                onLogSingle: {
-                    bloomCheckIn { store.checkIn(on: backdateSelection) }
                     showingBackdate = false
                 },
                 onCancel: { showingBackdate = false }
@@ -489,7 +442,7 @@ struct ReservoirHomeView: View {
     private func bloomCheckIn(_ action: () -> Void) {
         action()
         haptics.successBloom()
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.5)) { checkInBloom = 1 }
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { checkInBloom = 1 }
         withAnimation(.easeOut(duration: 0.9).delay(0.25)) { checkInBloom = 0 }
     }
 
@@ -613,7 +566,8 @@ private enum ReservoirTab: String, CaseIterable, Identifiable {
 // MARK: - Styling
 
 private enum ReservoirStyle {
-    static let radius: CGFloat = 20
+    static let radius: CGFloat = 16
+    static let iconRadius: CGFloat = 10
     static let ink = Color(red: 0.004, green: 0.016, blue: 0.024)
     static let panel = Color(red: 0.047, green: 0.086, blue: 0.113)
     static let panelStrong = Color(red: 0.063, green: 0.112, blue: 0.145)
@@ -629,22 +583,8 @@ private extension View {
     func reservoirPanel(stroke: Color = .white.opacity(0.10)) -> some View {
         let shape = RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
         return self
-            // HIG "Depth/Deference": a frosted material base, tinted to the
-            // app's dark palette, with a subtle elevation shadow.
-            .background(.ultraThinMaterial, in: shape)
-            .background(
-                LinearGradient(
-                    colors: [
-                        ReservoirStyle.panelStrong.opacity(0.72),
-                        ReservoirStyle.panel.opacity(0.40)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                in: shape
-            )
+            .background(ReservoirStyle.panel.opacity(0.55), in: shape)
             .overlay(shape.stroke(stroke, lineWidth: 1))
-            .shadow(color: .black.opacity(0.28), radius: 14, y: 8)
     }
 }
 
@@ -667,20 +607,21 @@ private struct ProgressRing: View {
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-82))
-                .shadow(color: accent.opacity(progress > 0 ? 0.50 : 0), radius: 8)
 
-            VStack(spacing: 5) {
+            VStack(spacing: 3) {
                 Text("\(Int(progress * 100))%")
-                    .font(.system(size: 29, weight: .black, design: .rounded))
+                    .font(.system(size: 26, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
-                    .minimumScaleFactor(0.6)
+                    .minimumScaleFactor(0.5)
                     .lineLimit(1)
                 Text(label)
-                    .font(.caption.weight(.bold))
-                    .tracking(4)
+                    .font(.caption2.weight(.bold))
+                    .tracking(1.5)
                     .foregroundStyle(.white.opacity(0.48))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 6)
         }
         .animation(.easeInOut(duration: 0.6), value: progress)
     }
@@ -700,7 +641,6 @@ private struct MilestoneBar: View {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(LinearGradient(colors: [ReservoirStyle.cyan, ReservoirStyle.cyanSoft], startPoint: .leading, endPoint: .trailing))
                     .frame(width: proxy.size.width * max(0, min(1, progress)))
-                    .shadow(color: accent.opacity(progress > 0 ? 0.42 : 0), radius: 6)
             }
         }
         .frame(height: 8)
@@ -745,7 +685,7 @@ private struct HeroInfoTile: View {
                 .font(.subheadline.weight(.bold))
                 .foregroundStyle(tint)
                 .frame(width: 34, height: 34)
-                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
+                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: ReservoirStyle.iconRadius, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -870,12 +810,12 @@ private struct AchievementRow: View {
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
-                    .fill(unlocked ? ReservoirStyle.gold.opacity(0.16) : .white.opacity(0.06))
+                RoundedRectangle(cornerRadius: ReservoirStyle.iconRadius, style: .continuous)
+                    .fill(unlocked ? ReservoirStyle.cyan.opacity(0.16) : .white.opacity(0.06))
                     .frame(width: 42, height: 42)
                 Image(systemName: unlocked ? "checkmark.seal.fill" : "lock.fill")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(unlocked ? ReservoirStyle.gold : .white.opacity(0.4))
+                    .foregroundStyle(unlocked ? ReservoirStyle.cyan : .white.opacity(0.4))
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -892,7 +832,7 @@ private struct AchievementRow: View {
 
             Text("\(achievement.days)d")
                 .font(.caption.weight(.black))
-                .foregroundStyle(unlocked ? ReservoirStyle.gold : .white.opacity(0.58))
+                .foregroundStyle(unlocked ? ReservoirStyle.cyan : .white.opacity(0.58))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
                 .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
@@ -903,11 +843,11 @@ private struct AchievementRow: View {
     }
 
     private var background: Color {
-        unlocked ? ReservoirStyle.gold.opacity(0.09) : ReservoirStyle.panel.opacity(0.62)
+        unlocked ? ReservoirStyle.cyan.opacity(0.09) : ReservoirStyle.panel.opacity(0.62)
     }
 
     private var stroke: Color {
-        unlocked ? ReservoirStyle.gold.opacity(0.26) : .white.opacity(0.07)
+        unlocked ? ReservoirStyle.cyan.opacity(0.26) : .white.opacity(0.07)
     }
 }
 
@@ -932,27 +872,22 @@ private struct MountainSilhouette: Shape {
 
 private struct BackdateSheet: View {
     @Binding var selection: Date
-    let isLogged: (Date) -> Bool
     let unloggedThroughToday: (Date) -> Int
     let onCatchUp: () -> Void
-    let onLogSingle: () -> Void
     let onCancel: () -> Void
 
     /// Captured once so the range identity is stable across re-renders
     /// (a range whose bounds recompute every render breaks date selection).
     @State private var range: ClosedRange<Date>
 
-    init(selection: Binding<Date>, earliest: Date, isLogged: @escaping (Date) -> Bool, unloggedThroughToday: @escaping (Date) -> Int, onCatchUp: @escaping () -> Void, onLogSingle: @escaping () -> Void, onCancel: @escaping () -> Void) {
+    init(selection: Binding<Date>, earliest: Date, unloggedThroughToday: @escaping (Date) -> Int, onCatchUp: @escaping () -> Void, onCancel: @escaping () -> Void) {
         _selection = selection
-        self.isLogged = isLogged
         self.unloggedThroughToday = unloggedThroughToday
         self.onCatchUp = onCatchUp
-        self.onLogSingle = onLogSingle
         self.onCancel = onCancel
         _range = State(initialValue: earliest...Date())
     }
 
-    private var loggedAlready: Bool { isLogged(selection) }
     private var fillCount: Int { unloggedThroughToday(selection) }
     private var isToday: Bool { Calendar.current.isDateInToday(selection) }
 
@@ -1001,18 +936,6 @@ private struct BackdateSheet: View {
                 .buttonStyle(PrimaryButtonStyle(disabled: fillCount == 0))
                 .disabled(fillCount == 0)
 
-                // Single-day option for logging an isolated past day (no catch-up).
-                if !isToday {
-                    Button(action: onLogSingle) {
-                        Text(loggedAlready ? "That day is already logged" : "Log only this day")
-                            .font(.subheadline.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                    }
-                    .buttonStyle(GhostButtonStyle(tint: loggedAlready ? .white.opacity(0.4) : ReservoirStyle.cyanSoft))
-                    .disabled(loggedAlready)
-                }
-
                 Button(action: onCancel) {
                     Text("Cancel")
                         .font(.subheadline.weight(.bold))
@@ -1045,7 +968,7 @@ private struct PrimaryButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
                     .stroke(.white.opacity(disabled ? 0.06 : 0.34), lineWidth: 1)
             )
-            .shadow(color: disabled ? .clear : ReservoirStyle.cyan.opacity(0.34), radius: configuration.isPressed ? 5 : 16, y: 7)
+            .shadow(color: .black.opacity(disabled ? 0 : 0.22), radius: configuration.isPressed ? 4 : 8, y: 4)
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
