@@ -161,6 +161,35 @@ final class ReservoirStore: ObservableObject {
 
     func checkInToday() { checkIn(on: Date()) }
 
+    /// Number of not-yet-logged days from `date` through today (inclusive).
+    func unloggedDaysThroughToday(from date: Date) -> Int {
+        let today = dayKey(Date())
+        var cursor = dayKey(date)
+        guard cursor <= today else { return 0 }
+        var count = 0
+        while cursor <= today {
+            if !checkInDays.contains(cursor) { count += 1 }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return count
+    }
+
+    /// Catch-up: logs every day from `date` through today so the current
+    /// streak reflects an unbroken run up to now.
+    func checkInThroughToday(from date: Date) {
+        let today = dayKey(Date())
+        var cursor = dayKey(date)
+        guard cursor <= today else { return }
+        while cursor <= today {
+            checkInDays.insert(cursor)
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        longestStreakFloor = max(longestStreakFloor, computedLongestStreak)
+        persist()
+    }
+
     /// Removes a previously logged day.
     func removeCheckIn(on date: Date) {
         guard checkInDays.remove(dayKey(date)) != nil else { return }

@@ -465,8 +465,13 @@ struct ReservoirHomeView: View {
                 selection: $backdateSelection,
                 earliest: store.earliestCheckInDate,
                 isLogged: { store.isCheckedIn(on: $0) },
-                onConfirm: {
-                    registerCheckIn(on: backdateSelection)
+                unloggedThroughToday: { store.unloggedDaysThroughToday(from: $0) },
+                onCatchUp: {
+                    bloomCheckIn { store.checkInThroughToday(from: backdateSelection) }
+                    showingBackdate = false
+                },
+                onLogSingle: {
+                    bloomCheckIn { store.checkIn(on: backdateSelection) }
                     showingBackdate = false
                 },
                 onCancel: { showingBackdate = false }
@@ -478,7 +483,11 @@ struct ReservoirHomeView: View {
 
     private func registerCheckIn(on date: Date) {
         guard store.canCheckIn(on: date) else { return }
-        store.checkIn(on: date)
+        bloomCheckIn { store.checkIn(on: date) }
+    }
+
+    private func bloomCheckIn(_ action: () -> Void) {
+        action()
         haptics.successBloom()
         withAnimation(.spring(response: 0.5, dampingFraction: 0.5)) { checkInBloom = 1 }
         withAnimation(.easeOut(duration: 0.9).delay(0.25)) { checkInBloom = 0 }
@@ -924,22 +933,28 @@ private struct MountainSilhouette: Shape {
 private struct BackdateSheet: View {
     @Binding var selection: Date
     let isLogged: (Date) -> Bool
-    let onConfirm: () -> Void
+    let unloggedThroughToday: (Date) -> Int
+    let onCatchUp: () -> Void
+    let onLogSingle: () -> Void
     let onCancel: () -> Void
 
     /// Captured once so the range identity is stable across re-renders
     /// (a range whose bounds recompute every render breaks date selection).
     @State private var range: ClosedRange<Date>
 
-    init(selection: Binding<Date>, earliest: Date, isLogged: @escaping (Date) -> Bool, onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void) {
+    init(selection: Binding<Date>, earliest: Date, isLogged: @escaping (Date) -> Bool, unloggedThroughToday: @escaping (Date) -> Int, onCatchUp: @escaping () -> Void, onLogSingle: @escaping () -> Void, onCancel: @escaping () -> Void) {
         _selection = selection
         self.isLogged = isLogged
-        self.onConfirm = onConfirm
+        self.unloggedThroughToday = unloggedThroughToday
+        self.onCatchUp = onCatchUp
+        self.onLogSingle = onLogSingle
         self.onCancel = onCancel
         _range = State(initialValue: earliest...Date())
     }
 
     private var loggedAlready: Bool { isLogged(selection) }
+    private var fillCount: Int { unloggedThroughToday(selection) }
+    private var isToday: Bool { Calendar.current.isDateInToday(selection) }
 
     var body: some View {
         ZStack {
@@ -947,16 +962,17 @@ private struct BackdateSheet: View {
 
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("LOG A DAY")
+                    Text("LOG DAYS")
                         .font(.caption.weight(.bold))
                         .tracking(5)
                         .foregroundStyle(ReservoirStyle.cyan)
-                    Text("Add a retained day")
+                    Text("Catch up your streak")
                         .font(.system(size: 26, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
-                    Text("Spin to today or any earlier day you stayed disciplined.")
+                    Text("Pick the day you started. Catching up logs every day from then through today so your streak counts them.")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.white.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 DatePicker(
@@ -974,22 +990,28 @@ private struct BackdateSheet: View {
                 .padding(.horizontal, 14)
                 .reservoirPanel()
 
-                if loggedAlready {
-                    Label("That day is already logged.", systemImage: "checkmark.seal.fill")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(ReservoirStyle.mint)
-                }
-
                 Spacer(minLength: 0)
 
-                Button(action: onConfirm) {
-                    Label(loggedAlready ? "Already Logged" : "Log This Day", systemImage: "drop.fill")
+                Button(action: onCatchUp) {
+                    Label(catchUpTitle, systemImage: "drop.fill")
                         .font(.title3.weight(.black))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
                 }
-                .buttonStyle(PrimaryButtonStyle(disabled: loggedAlready))
-                .disabled(loggedAlready)
+                .buttonStyle(PrimaryButtonStyle(disabled: fillCount == 0))
+                .disabled(fillCount == 0)
+
+                // Single-day option for logging an isolated past day (no catch-up).
+                if !isToday {
+                    Button(action: onLogSingle) {
+                        Text(loggedAlready ? "That day is already logged" : "Log only this day")
+                            .font(.subheadline.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                    }
+                    .buttonStyle(GhostButtonStyle(tint: loggedAlready ? .white.opacity(0.4) : ReservoirStyle.cyanSoft))
+                    .disabled(loggedAlready)
+                }
 
                 Button(action: onCancel) {
                     Text("Cancel")
@@ -1001,6 +1023,12 @@ private struct BackdateSheet: View {
             }
             .padding(20)
         }
+    }
+
+    private var catchUpTitle: String {
+        if fillCount == 0 { return "All caught up" }
+        if isToday { return "Check In Today" }
+        return "Catch Up to Today (\(fillCount) day\(fillCount == 1 ? "" : "s"))"
     }
 }
 
