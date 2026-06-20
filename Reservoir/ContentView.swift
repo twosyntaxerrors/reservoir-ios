@@ -431,6 +431,7 @@ struct ReservoirHomeView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(.white.opacity(0.10), lineWidth: 1))
+        .shadow(color: .black.opacity(0.28), radius: 14, y: 8)
     }
 
     // MARK: - Actions
@@ -603,7 +604,7 @@ private enum ReservoirTab: String, CaseIterable, Identifiable {
 // MARK: - Styling
 
 private enum ReservoirStyle {
-    static let radius: CGFloat = 8
+    static let radius: CGFloat = 20
     static let ink = Color(red: 0.004, green: 0.016, blue: 0.024)
     static let panel = Color(red: 0.047, green: 0.086, blue: 0.113)
     static let panelStrong = Color(red: 0.063, green: 0.112, blue: 0.145)
@@ -617,22 +618,24 @@ private enum ReservoirStyle {
 
 private extension View {
     func reservoirPanel(stroke: Color = .white.opacity(0.10)) -> some View {
-        self
+        let shape = RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
+        return self
+            // HIG "Depth/Deference": a frosted material base, tinted to the
+            // app's dark palette, with a subtle elevation shadow.
+            .background(.ultraThinMaterial, in: shape)
             .background(
                 LinearGradient(
                     colors: [
-                        ReservoirStyle.panelStrong.opacity(0.76),
-                        ReservoirStyle.panel.opacity(0.46)
+                        ReservoirStyle.panelStrong.opacity(0.72),
+                        ReservoirStyle.panel.opacity(0.40)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ),
-                in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
+                in: shape
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
-                    .stroke(stroke, lineWidth: 1)
-            )
+            .overlay(shape.stroke(stroke, lineWidth: 1))
+            .shadow(color: .black.opacity(0.28), radius: 14, y: 8)
     }
 }
 
