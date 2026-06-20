@@ -1,0 +1,20 @@
+# macOS / Xcode
+.DS_Store
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Secrets / Apple credentials
+apple-auth/
+*.p8
+AuthKey_*.p8
+
+# Local generated archives
+*.zip
+
+# Claude local state
+.claude/settings.local.json
