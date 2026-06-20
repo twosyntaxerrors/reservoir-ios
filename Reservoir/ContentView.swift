@@ -475,7 +475,7 @@ struct ReservoirHomeView: View {
                 },
                 onCancel: { showingBackdate = false }
             )
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
     }
