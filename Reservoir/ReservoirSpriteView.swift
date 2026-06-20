@@ -124,7 +124,9 @@ final class ReservoirScene: SKScene {
         liquidHighlightNode.lineWidth = 2
         liquidHighlightNode.fillColor = .clear
         liquidHighlightNode.blendMode = .add
-        addChild(liquidHighlightNode)
+        // Clip the surface highlight to the vessel so the wavy line never
+        // extends beyond the glass (the source of the squiggle artifact).
+        liquidCropNode.addChild(liquidHighlightNode)
 
         vesselNode.zPosition = 8
         vesselNode.fillColor = .white.withAlphaComponent(0.025)
