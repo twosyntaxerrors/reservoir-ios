@@ -3,31 +3,96 @@ import SwiftUI
 
 @MainActor
 final class ReservoirStore: ObservableObject {
-    @Published private(set) var currentStreak: Int
-    @Published private(set) var longestStreak: Int
-    @Published private(set) var totalRetentionDays: Int
-    @Published private(set) var lastCheckIn: Date?
+    /// Source of truth: the set of calendar days (normalized to start-of-day) that were checked in.
+    @Published private(set) var checkInDays: Set<Date>
     @Published var selectedVessel: VesselSkin
     @Published private(set) var relapseCount: Int
+
+    /// Floor that preserves a previously earned longest streak (e.g. migrated data),
+    /// so vessel unlocks are never lost even if the full day history isn't reconstructable.
+    private var longestStreakFloor: Int
 
     private let defaults: UserDefaults
     private let calendar = Calendar.current
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        currentStreak = defaults.integer(forKey: Keys.currentStreak)
-        longestStreak = defaults.integer(forKey: Keys.longestStreak)
-        totalRetentionDays = defaults.integer(forKey: Keys.totalRetentionDays)
-        lastCheckIn = defaults.object(forKey: Keys.lastCheckIn) as? Date
+        let cal = Calendar.current
+        func key(_ date: Date) -> Date { cal.startOfDay(for: date) }
+
         relapseCount = defaults.integer(forKey: Keys.relapseCount)
         selectedVessel = VesselSkin(rawValue: defaults.string(forKey: Keys.selectedVessel) ?? VesselSkin.apprentice.rawValue) ?? .apprentice
+
+        if let stored = defaults.array(forKey: Keys.checkInDays) as? [Double] {
+            checkInDays = Set(stored.map { key(Date(timeIntervalSince1970: $0)) })
+            longestStreakFloor = defaults.integer(forKey: Keys.longestStreakFloor)
+        } else {
+            // Migrate from the legacy counter model: rebuild the current streak as a
+            // run of consecutive days ending at the last recorded check-in (or today).
+            let legacyStreak = defaults.integer(forKey: Keys.currentStreak)
+            let legacyLast = defaults.object(forKey: Keys.lastCheckIn) as? Date
+            var set = Set<Date>()
+            if legacyStreak > 0 {
+                let end = key(legacyLast ?? Date())
+                for offset in 0..<legacyStreak {
+                    if let day = cal.date(byAdding: .day, value: -offset, to: end) { set.insert(day) }
+                }
+            }
+            checkInDays = set
+            longestStreakFloor = max(defaults.integer(forKey: Keys.longestStreak), legacyStreak)
+        }
+
         if !isUnlocked(selectedVessel) { selectedVessel = .apprentice }
     }
 
-    var canCheckInToday: Bool {
-        guard let lastCheckIn else { return true }
-        return !calendar.isDateInToday(lastCheckIn)
+    // MARK: - Derived values
+
+    private func dayKey(_ date: Date) -> Date { calendar.startOfDay(for: date) }
+
+    var lastCheckIn: Date? { checkInDays.max() }
+
+    var totalRetentionDays: Int { checkInDays.count }
+
+    /// Consecutive days ending today, or ending yesterday if today isn't logged yet
+    /// (so the streak doesn't read as broken before today's check-in).
+    var currentStreak: Int {
+        let today = dayKey(Date())
+        let anchor: Date
+        if checkInDays.contains(today) {
+            anchor = today
+        } else if let yesterday = calendar.date(byAdding: .day, value: -1, to: today), checkInDays.contains(yesterday) {
+            anchor = yesterday
+        } else {
+            return 0
+        }
+        var count = 0
+        var cursor = anchor
+        while checkInDays.contains(cursor) {
+            count += 1
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
+            cursor = previous
+        }
+        return count
     }
+
+    private var computedLongestStreak: Int {
+        guard !checkInDays.isEmpty else { return 0 }
+        let sorted = checkInDays.sorted()
+        var longest = 1
+        var run = 1
+        for index in 1..<sorted.count {
+            if let next = calendar.date(byAdding: .day, value: 1, to: sorted[index - 1]),
+               calendar.isDate(next, inSameDayAs: sorted[index]) {
+                run += 1
+            } else {
+                run = 1
+            }
+            longest = max(longest, run)
+        }
+        return longest
+    }
+
+    var longestStreak: Int { max(longestStreakFloor, computedLongestStreak) }
 
     var fillProgress: Double { fillFraction(for: currentStreak) }
     var glowProgress: Double { glowStrength(for: currentStreak) }
@@ -67,29 +132,57 @@ final class ReservoirStore: ObservableObject {
         }
     }
 
-    func checkInToday() {
-        guard canCheckInToday else { return }
-        currentStreak += 1
-        longestStreak = max(longestStreak, currentStreak)
-        totalRetentionDays += 1
-        lastCheckIn = Date()
+    /// The earliest date a check-in may be backfilled to.
+    var earliestCheckInDate: Date {
+        calendar.date(byAdding: .year, value: -5, to: Date()) ?? Date()
+    }
+
+    // MARK: - Mutations
+
+    var canCheckInToday: Bool { canCheckIn(on: Date()) }
+
+    /// A day can be logged if it isn't in the future and hasn't already been logged.
+    func canCheckIn(on date: Date) -> Bool {
+        let key = dayKey(date)
+        return key <= dayKey(Date()) && !checkInDays.contains(key)
+    }
+
+    func isCheckedIn(on date: Date) -> Bool {
+        checkInDays.contains(dayKey(date))
+    }
+
+    /// Logs a retained day for the given date (today or any earlier day).
+    func checkIn(on date: Date) {
+        guard canCheckIn(on: date) else { return }
+        checkInDays.insert(dayKey(date))
+        longestStreakFloor = max(longestStreakFloor, computedLongestStreak)
         persist()
     }
 
+    func checkInToday() { checkIn(on: Date()) }
+
+    /// Removes a previously logged day.
+    func removeCheckIn(on date: Date) {
+        guard checkInDays.remove(dayKey(date)) != nil else { return }
+        persist()
+    }
+
+    /// Test/preview helper: appends one more consecutive day to the current run.
     func previewAdvanceOneDay() {
-        currentStreak += 1
-        longestStreak = max(longestStreak, currentStreak)
-        totalRetentionDays += 1
-        lastCheckIn = Calendar.current.date(byAdding: .day, value: -1, to: Date())
+        var cursor = dayKey(Date())
+        while checkInDays.contains(cursor) {
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { return }
+            cursor = previous
+        }
+        checkInDays.insert(cursor)
+        longestStreakFloor = max(longestStreakFloor, computedLongestStreak)
         persist()
     }
 
     /// Full reset: returns every tracked value to zero and starts a brand-new journey.
     func reset() {
-        currentStreak = 0
-        longestStreak = 0
-        totalRetentionDays = 0
-        lastCheckIn = nil
+        checkInDays = []
+        longestStreakFloor = 0
         relapseCount = 0
         selectedVessel = .apprentice
         persist()
@@ -106,20 +199,20 @@ final class ReservoirStore: ObservableObject {
     }
 
     private func persist() {
-        defaults.set(currentStreak, forKey: Keys.currentStreak)
-        defaults.set(longestStreak, forKey: Keys.longestStreak)
-        defaults.set(totalRetentionDays, forKey: Keys.totalRetentionDays)
-        defaults.set(lastCheckIn, forKey: Keys.lastCheckIn)
+        defaults.set(checkInDays.map { $0.timeIntervalSince1970 }, forKey: Keys.checkInDays)
+        defaults.set(longestStreakFloor, forKey: Keys.longestStreakFloor)
         defaults.set(relapseCount, forKey: Keys.relapseCount)
         defaults.set(selectedVessel.rawValue, forKey: Keys.selectedVessel)
     }
 }
 
 private enum Keys {
-    static let currentStreak = "reservoir.currentStreak"
-    static let longestStreak = "reservoir.longestStreak"
-    static let totalRetentionDays = "reservoir.totalRetentionDays"
-    static let lastCheckIn = "reservoir.lastCheckIn"
+    static let checkInDays = "reservoir.checkInDays"
+    static let longestStreakFloor = "reservoir.longestStreakFloor"
     static let selectedVessel = "reservoir.selectedVessel"
     static let relapseCount = "reservoir.relapseCount"
+    // Legacy keys (read once for migration).
+    static let currentStreak = "reservoir.currentStreak"
+    static let longestStreak = "reservoir.longestStreak"
+    static let lastCheckIn = "reservoir.lastCheckIn"
 }
