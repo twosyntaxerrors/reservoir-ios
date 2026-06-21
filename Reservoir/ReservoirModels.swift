@@ -8,11 +8,11 @@ struct Achievement: Identifiable, Hashable {
     let unlock: String
 
     static let all: [Achievement] = [
-        Achievement(id: "first-drop", title: "First Drop", days: 1, subtitle: "The reservoir awakens.", unlock: "Aether shimmer"),
-        Achievement(id: "one-week", title: "One Week", days: 7, subtitle: "A visible pool of discipline.", unlock: "Soft particle field"),
-        Achievement(id: "one-moon", title: "One Moon", days: 30, subtitle: "A full lunar cycle retained.", unlock: "Alchemist Vessel + golden glow"),
-        Achievement(id: "iron-discipline", title: "Iron Discipline", days: 90, subtitle: "Energy begins to move on its own.", unlock: "Dragon Blood Vial + internal currents"),
-        Achievement(id: "ascension", title: "Ascension", days: 365, subtitle: "A legendary reservoir.", unlock: "Cosmic Reservoir + celestial effects")
+        Achievement(id: "first-drop", title: "First Light", days: 1, subtitle: "The vessel catches its first glow.", unlock: "First light recorded"),
+        Achievement(id: "one-week", title: "One Week", days: 7, subtitle: "Seven days held without a break.", unlock: "Weekly mark held"),
+        Achievement(id: "one-moon", title: "One Month", days: 30, subtitle: "A full month of discipline.", unlock: "Beaker unlocked"),
+        Achievement(id: "iron-discipline", title: "Ninety Days", days: 90, subtitle: "A season kept.", unlock: "Carafe unlocked"),
+        Achievement(id: "ascension", title: "One Year", days: 365, subtitle: "The reservoir, filled.", unlock: "Reservoir unlocked")
     ]
 }
 
@@ -26,10 +26,10 @@ enum VesselSkin: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .apprentice: return "Apprentice Flask"
-        case .alchemist: return "Alchemist Vessel"
-        case .dragon: return "Dragon Blood Vial"
-        case .cosmic: return "Cosmic Reservoir"
+        case .apprentice: return "Phial"
+        case .alchemist: return "Beaker"
+        case .dragon: return "Carafe"
+        case .cosmic: return "Reservoir"
         }
     }
 
@@ -44,28 +44,28 @@ enum VesselSkin: String, CaseIterable, Identifiable {
 
     var description: String {
         switch self {
-        case .apprentice: return "Clear hand-blown glass. A quiet beginning."
-        case .alchemist: return "Etched crystal. Sharper light."
-        case .dragon: return "Heavy obsidian glass."
-        case .cosmic: return "Void glass that pulls light inward."
+        case .apprentice: return "Clear glass for the first measure."
+        case .alchemist: return "A wider vessel with finer marks."
+        case .dragon: return "Tall glass for a longer season."
+        case .cosmic: return "The full reservoir, held steady."
         }
     }
 
     var liquidColors: [UIColor] {
         switch self {
-        case .apprentice: return [UIColor(red: 0.45, green: 0.92, blue: 1.0, alpha: 1), UIColor(red: 0.12, green: 0.33, blue: 1.0, alpha: 1)]
-        case .alchemist: return [UIColor(red: 1.0, green: 0.83, blue: 0.35, alpha: 1), UIColor(red: 0.2, green: 0.45, blue: 1.0, alpha: 1)]
-        case .dragon: return [UIColor(red: 1.0, green: 0.38, blue: 0.25, alpha: 1), UIColor(red: 0.45, green: 0.04, blue: 0.08, alpha: 1)]
-        case .cosmic: return [UIColor(red: 0.66, green: 0.52, blue: 1.0, alpha: 1), UIColor(red: 0.05, green: 0.12, blue: 0.38, alpha: 1)]
+        case .apprentice: return [UIColor(red: 0.13, green: 0.75, blue: 0.82, alpha: 1), UIColor(red: 0.04, green: 0.51, blue: 0.58, alpha: 1)]
+        case .alchemist: return [UIColor(red: 0.18, green: 0.82, blue: 0.88, alpha: 1), UIColor(red: 0.05, green: 0.55, blue: 0.62, alpha: 1)]
+        case .dragon: return [UIColor(red: 0.27, green: 0.84, blue: 0.90, alpha: 1), UIColor(red: 0.07, green: 0.48, blue: 0.55, alpha: 1)]
+        case .cosmic: return [UIColor(red: 0.49, green: 0.92, blue: 0.96, alpha: 1), UIColor(red: 0.11, green: 0.49, blue: 0.55, alpha: 1)]
         }
     }
 
     var glowColor: Color {
         switch self {
-        case .apprentice: return .cyan
-        case .alchemist: return .yellow
-        case .dragon: return .orange
-        case .cosmic: return .purple
+        case .apprentice: return Color(red: 0.13, green: 0.75, blue: 0.82)
+        case .alchemist: return Color(red: 0.18, green: 0.82, blue: 0.88)
+        case .dragon: return Color(red: 0.27, green: 0.84, blue: 0.90)
+        case .cosmic: return Color(red: 0.49, green: 0.92, blue: 0.96)
         }
     }
 }

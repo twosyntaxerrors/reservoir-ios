@@ -12,7 +12,6 @@ struct ReservoirApp: App {
                 .environmentObject(store)
                 .environmentObject(motion)
                 .environmentObject(haptics)
-                .preferredColorScheme(.dark)
         }
     }
 }

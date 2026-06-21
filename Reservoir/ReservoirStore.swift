@@ -123,11 +123,11 @@ final class ReservoirStore: ObservableObject {
 
     var milestoneText: String {
         switch currentStreak {
-        case 365...: return "Cosmic identity unlocked"
-        case 180...: return "Energy arcs forming"
-        case 90...: return "Internal current active"
-        case 30...: return "Lunar glow stabilized"
-        case 7...: return "Particles awakened"
+        case 365...: return "The reservoir is full"
+        case 180...: return "Deep measure held"
+        case 90...: return "A season kept"
+        case 30...: return "One month held"
+        case 7...: return "One week held"
         default: return "First light gathering"
         }
     }

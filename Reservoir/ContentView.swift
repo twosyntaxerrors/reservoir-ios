@@ -11,8 +11,12 @@ struct ReservoirHomeView: View {
     @State private var selectedTab: ReservoirTab = .today
     @State private var showingBackdate = false
     @State private var backdateSelection = Date()
+    @AppStorage("reservoir.theme") private var themeRawValue = ReservoirTheme.light.rawValue
 
     private var accent: Color { store.primaryGlow }
+    private var theme: ReservoirTheme {
+        ReservoirTheme(rawValue: themeRawValue) ?? .light
+    }
 
     var body: some View {
         ZStack {
@@ -37,6 +41,7 @@ struct ReservoirHomeView: View {
             haptics.prepare()
         }
         .onDisappear { motion.stop() }
+        .preferredColorScheme(theme.colorScheme)
         .alert("Reset everything to 0?", isPresented: $showingReset) {
             Button("Cancel", role: .cancel) {}
             Button("Reset to 0", role: .destructive) { performReset() }
@@ -92,17 +97,44 @@ struct ReservoirHomeView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Reservoir")
                                 .font(.title3.weight(.bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(ReservoirStyle.textPrimary)
                             Text(store.selectedVessel.title)
                                 .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.white.opacity(0.62))
+                                .foregroundStyle(ReservoirStyle.textSecondary)
                         }
 
                         Spacer()
                     }
 
                     Divider()
-                        .overlay(.white.opacity(0.08))
+                        .overlay(ReservoirStyle.hairline)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("APPEARANCE")
+                            .font(.caption.weight(.bold))
+                            .tracking(3)
+                            .foregroundStyle(ReservoirStyle.textMuted)
+
+                        HStack(spacing: 8) {
+                            ForEach(ReservoirTheme.allCases) { option in
+                                Button {
+                                    themeRawValue = option.rawValue
+                                    haptics.softTick()
+                                } label: {
+                                    Label(option.title, systemImage: option.systemImage)
+                                        .font(.subheadline.weight(.semibold))
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.82)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                }
+                                .buttonStyle(ThemeChipStyle(active: theme == option))
+                            }
+                        }
+                    }
+
+                    Divider()
+                        .overlay(ReservoirStyle.hairline)
 
                     Button { showingReset = true } label: {
                         Label("Reset everything to 0", systemImage: "arrow.counterclockwise")
@@ -128,13 +160,13 @@ struct ReservoirHomeView: View {
                 .tracking(7)
                 .foregroundStyle(ReservoirStyle.cyan)
             Text(title)
-                .font(.system(size: 42, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
+                .font(.system(size: 38, weight: .semibold, design: .default))
+                .foregroundStyle(ReservoirStyle.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(subtitle)
                 .font(.headline.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.58))
+                .foregroundStyle(ReservoirStyle.textSecondary)
         }
     }
 
@@ -144,9 +176,9 @@ struct ReservoirHomeView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.012, green: 0.026, blue: 0.036),
-                    Color(red: 0.018, green: 0.046, blue: 0.060),
-                    ReservoirStyle.ink
+                    ReservoirStyle.canvas,
+                    ReservoirStyle.canvas,
+                    ReservoirStyle.canvasDeep
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -154,18 +186,14 @@ struct ReservoirHomeView: View {
 
             LinearGradient(
                 colors: [
-                    ReservoirStyle.cyan.opacity(0.16),
+                    ReservoirStyle.cyan.opacity(0.06),
                     .clear,
-                    ReservoirStyle.cyanDeep.opacity(0.14)
+                    ReservoirStyle.cyan.opacity(0.045)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .blendMode(.screen)
-
-            Rectangle()
-                .fill(.black.opacity(0.16))
-                .ignoresSafeArea()
         }
         .ignoresSafeArea()
     }
@@ -181,12 +209,12 @@ struct ReservoirHomeView: View {
                     .foregroundStyle(ReservoirStyle.cyan)
 
                 VStack(alignment: .leading, spacing: -1) {
-                    Text("Discipline,")
-                        .foregroundStyle(.white)
-                    Text("made visible.")
+                    Text("Reservoir")
+                        .foregroundStyle(ReservoirStyle.textPrimary)
+                    Text("measured daily.")
                         .foregroundStyle(ReservoirStyle.cyanSoft)
                 }
-                .font(.system(size: 36, weight: .black, design: .rounded))
+                .font(.system(size: 34, weight: .semibold, design: .default))
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
                 .fixedSize(horizontal: false, vertical: true)
@@ -260,26 +288,26 @@ struct ReservoirHomeView: View {
             .frame(height: 360)
 
             Divider()
-                .overlay(.white.opacity(0.08))
+                .overlay(ReservoirStyle.hairline)
 
             HStack(spacing: 0) {
                 HeroInfoTile(title: "VESSEL", value: store.selectedVessel.title, systemImage: "flask.fill", tint: ReservoirStyle.cyan)
                 Divider()
-                    .overlay(.white.opacity(0.08))
+                    .overlay(ReservoirStyle.hairline)
                 HeroInfoTile(title: "NEXT UNLOCK", value: store.nextAchievementTitle, systemImage: "flag.fill", tint: ReservoirStyle.cyan)
             }
             .frame(height: 86)
-            .background(.white.opacity(0.018))
+            .background(ReservoirStyle.panelSubtle)
         }
-        .reservoirPanel(stroke: .white.opacity(0.14))
+        .reservoirPanel(stroke: ReservoirStyle.hairline)
     }
 
     private var heroAtmosphere: some View {
         LinearGradient(
             colors: [
-                .white.opacity(0.05),
-                ReservoirStyle.panel.opacity(0.32),
-                .black.opacity(0.10)
+                ReservoirStyle.panelElevated,
+                ReservoirStyle.panel,
+                ReservoirStyle.canvasDeep.opacity(0.42)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -294,14 +322,14 @@ struct ReservoirHomeView: View {
                 .foregroundStyle(ReservoirStyle.cyan)
 
             Text(dayDisplay)
-                .font(.system(size: 74, weight: .light, design: .rounded))
-                .foregroundStyle(.white)
+                .font(.system(size: 78, weight: .light, design: .default))
+                .foregroundStyle(ReservoirStyle.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.58)
 
             Text(store.milestoneText)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.58))
+                .foregroundStyle(ReservoirStyle.textSecondary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.82)
         }
@@ -318,14 +346,14 @@ struct ReservoirHomeView: View {
                 .foregroundStyle(ReservoirStyle.cyan)
             Text(text)
                 .font(.caption2.weight(.bold))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(ReservoirStyle.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(.black.opacity(0.24), in: Capsule())
-        .overlay(Capsule().stroke(.white.opacity(0.10), lineWidth: 1))
+        .background(ReservoirStyle.panelSubtle, in: Capsule())
+        .overlay(Capsule().stroke(ReservoirStyle.hairline, lineWidth: 1))
     }
 
     // MARK: - Stats
@@ -348,8 +376,8 @@ struct ReservoirHomeView: View {
                         .tracking(4)
                         .foregroundStyle(ReservoirStyle.cyan)
                     Text(store.nextAchievementTitle)
-                        .font(.system(size: 28, weight: .black, design: .rounded))
-                        .foregroundStyle(ReservoirStyle.cyanSoft)
+                        .font(.system(size: 26, weight: .semibold, design: .default))
+                        .foregroundStyle(ReservoirStyle.textPrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.74)
                 }
@@ -361,8 +389,8 @@ struct ReservoirHomeView: View {
                     .foregroundStyle(ReservoirStyle.cyan)
                     .padding(.horizontal, 15)
                     .padding(.vertical, 12)
-                    .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(.white.opacity(0.08), lineWidth: 1))
+                    .background(ReservoirStyle.panelSubtle, in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(ReservoirStyle.hairline, lineWidth: 1))
             }
 
             MilestoneBar(progress: store.achievementProgress, accent: ReservoirStyle.cyan)
@@ -371,25 +399,21 @@ struct ReservoirHomeView: View {
                  ? "\(store.daysUntilNextAchievement) retained days until the next unlock."
                  : "All milestone unlocks are complete.")
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.white.opacity(0.62))
+                .foregroundStyle(ReservoirStyle.textSecondary)
         }
         .padding(20)
         .background {
             ZStack(alignment: .bottomTrailing) {
-                ReservoirStyle.panel.opacity(0.62)
-                MountainSilhouette()
-                    .fill(ReservoirStyle.cyan.opacity(0.11))
-                    .frame(width: 220, height: 86)
-                    .offset(x: 18, y: 10)
+                ReservoirStyle.panel
                 LinearGradient(
-                    colors: [.white.opacity(0.04), .clear],
+                    colors: [ReservoirStyle.cyan.opacity(0.04), .clear],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(.white.opacity(0.10), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(ReservoirStyle.hairline, lineWidth: 1))
     }
 
     // MARK: - Actions
@@ -498,11 +522,11 @@ struct ReservoirHomeView: View {
                 } label: {
                     VStack(spacing: 6) {
                         Image(systemName: tab.systemImage)
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.system(size: 22, weight: .semibold))
                         Text(tab.title)
                             .font(.footnote.weight(.medium))
                     }
-                    .foregroundStyle(selectedTab == tab ? ReservoirStyle.cyan : .white.opacity(0.46))
+                    .foregroundStyle(selectedTab == tab ? ReservoirStyle.cyan : ReservoirStyle.textMuted)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 16)
                     .padding(.bottom, 12)
@@ -512,19 +536,10 @@ struct ReservoirHomeView: View {
         }
         .padding(.horizontal, 18)
         .padding(.top, 4)
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(red: 0.018, green: 0.042, blue: 0.056).opacity(0.96),
-                    Color(red: 0.008, green: 0.018, blue: 0.026).opacity(0.98)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .background(ReservoirStyle.navigationBar)
         .overlay(alignment: .top) {
             RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
-                .stroke(.white.opacity(0.08), lineWidth: 1)
+                .stroke(ReservoirStyle.hairline, lineWidth: 1)
                 .frame(height: 1)
         }
     }
@@ -565,26 +580,78 @@ private enum ReservoirTab: String, CaseIterable, Identifiable {
 
 // MARK: - Styling
 
+private enum ReservoirTheme: String, CaseIterable, Identifiable {
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .light: return "Light"
+        case .dark: return "Dark"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
+        }
+    }
+
+    var colorScheme: ColorScheme {
+        switch self {
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+}
+
 private enum ReservoirStyle {
-    static let radius: CGFloat = 16
-    static let iconRadius: CGFloat = 10
-    static let ink = Color(red: 0.004, green: 0.016, blue: 0.024)
-    static let panel = Color(red: 0.047, green: 0.086, blue: 0.113)
-    static let panelStrong = Color(red: 0.063, green: 0.112, blue: 0.145)
-    static let cyan = Color(red: 0.29, green: 0.76, blue: 1.0)
-    static let cyanSoft = Color(red: 0.67, green: 0.86, blue: 1.0)
-    static let cyanDeep = Color(red: 0.02, green: 0.22, blue: 0.34)
+    static let radius: CGFloat = 14
+    static let iconRadius: CGFloat = 7
+    static let canvas = dynamic(light: UIColor(hex: 0xF4F2EC), dark: UIColor(hex: 0x08090C))
+    static let canvasDeep = dynamic(light: UIColor(hex: 0xE7E5DF), dark: UIColor(hex: 0x111418))
+    static let panel = dynamic(light: .white, dark: UIColor(hex: 0x15181C))
+    static let panelElevated = dynamic(light: UIColor(hex: 0xFFFEFA), dark: UIColor(hex: 0x1B1F24))
+    static let panelSubtle = dynamic(light: UIColor(hex: 0xF8F7F2), dark: UIColor(hex: 0x20252A))
+    static let navigationBar = dynamic(light: UIColor(hex: 0xFFFEFA).withAlphaComponent(0.94), dark: UIColor(hex: 0x0D1013).withAlphaComponent(0.96))
+    static let textPrimary = dynamic(light: UIColor(hex: 0x191B1D), dark: UIColor(hex: 0xEAF0F2))
+    static let textSecondary = dynamic(light: UIColor(hex: 0x3C4145), dark: UIColor(hex: 0xAEB8BE))
+    static let textMuted = dynamic(light: UIColor(hex: 0x6A7177), dark: UIColor(hex: 0x7C878E))
+    static let hairline = dynamic(light: UIColor(hex: 0x141618).withAlphaComponent(0.08), dark: UIColor(hex: 0xEAF0F2).withAlphaComponent(0.10))
+    static let ink = canvas
+    static let panelStrong = dynamic(light: UIColor(hex: 0xECE9E0), dark: UIColor(hex: 0x252A30))
+    static let cyan = dynamic(light: UIColor(hex: 0x0FA6B8), dark: UIColor(hex: 0x46D7E6))
+    static let cyanSoft = dynamic(light: UIColor(hex: 0x22BFD1), dark: UIColor(hex: 0x7CEBF4))
+    static let cyanDeep = dynamic(light: UIColor(hex: 0x0B8294), dark: UIColor(hex: 0x1C7E8C))
     static let gold = Color(red: 0.96, green: 0.70, blue: 0.25)
     static let mint = Color(red: 0.46, green: 0.91, blue: 0.74)
-    static let coral = Color(red: 1.0, green: 0.43, blue: 0.39)
+    static let coral = dynamic(light: UIColor(hex: 0xD8463C), dark: UIColor(hex: 0xFF4438))
+
+    private static func dynamic(light: UIColor, dark: UIColor) -> Color {
+        Color(UIColor { traits in traits.userInterfaceStyle == .dark ? dark : light })
+    }
 }
 
 private extension View {
-    func reservoirPanel(stroke: Color = .white.opacity(0.10)) -> some View {
+    func reservoirPanel(stroke: Color = ReservoirStyle.hairline) -> some View {
         let shape = RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
         return self
-            .background(ReservoirStyle.panel.opacity(0.55), in: shape)
+            .background(ReservoirStyle.panel, in: shape)
             .overlay(shape.stroke(stroke, lineWidth: 1))
+    }
+}
+
+private extension UIColor {
+    convenience init(hex: Int, alpha: CGFloat = 1) {
+        self.init(
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: alpha
+        )
     }
 }
 
@@ -599,7 +666,7 @@ private struct ProgressRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(.white.opacity(0.15), lineWidth: lineWidth)
+                .stroke(ReservoirStyle.hairline, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: max(0, min(1, progress)))
                 .stroke(
@@ -611,13 +678,13 @@ private struct ProgressRing: View {
             VStack(spacing: 3) {
                 Text("\(Int(progress * 100))%")
                     .font(.system(size: 26, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ReservoirStyle.textPrimary)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
                 Text(label)
                     .font(.caption2.weight(.bold))
                     .tracking(1.5)
-                    .foregroundStyle(.white.opacity(0.48))
+                    .foregroundStyle(ReservoirStyle.textMuted)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }
@@ -637,7 +704,7 @@ private struct MilestoneBar: View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(.white.opacity(0.08))
+                    .fill(ReservoirStyle.panelSubtle)
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(LinearGradient(colors: [ReservoirStyle.cyan, ReservoirStyle.cyanSoft], startPoint: .leading, endPoint: .trailing))
                     .frame(width: proxy.size.width * max(0, min(1, progress)))
@@ -663,10 +730,10 @@ private struct SectionTitle: View {
         HStack(spacing: 8) {
             Image(systemName: systemImage)
                 .font(.subheadline.weight(.bold))
-                .foregroundStyle(.white.opacity(0.62))
+                .foregroundStyle(ReservoirStyle.textMuted)
             Text(title)
-                .font(.system(.headline, design: .rounded).weight(.bold))
-                .foregroundStyle(.white)
+                .font(.system(.headline, design: .default).weight(.semibold))
+                .foregroundStyle(ReservoirStyle.textPrimary)
         }
     }
 }
@@ -691,12 +758,12 @@ private struct HeroInfoTile: View {
                 Text(title)
                     .font(.caption2.weight(.bold))
                     .tracking(0.8)
-                    .foregroundStyle(.white.opacity(0.50))
+                    .foregroundStyle(ReservoirStyle.textMuted)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Text(value)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ReservoirStyle.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
             }
@@ -726,14 +793,14 @@ private struct StatTile: View {
             Spacer(minLength: 0)
 
             Text(value)
-                .font(.system(size: 34, weight: .black, design: .rounded))
-                .foregroundStyle(.white)
+                .font(.system(size: 34, weight: .semibold, design: .default))
+                .foregroundStyle(ReservoirStyle.textPrimary)
                 .minimumScaleFactor(0.55)
                 .lineLimit(1)
 
             Text(label)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(ReservoirStyle.textSecondary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.75)
         }
@@ -763,7 +830,7 @@ private struct VesselCard: View {
                     Spacer()
                     Image(systemName: unlocked ? (active ? "checkmark.circle.fill" : "circle") : "lock.fill")
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(active ? vessel.glowColor : .white.opacity(0.42))
+                        .foregroundStyle(active ? ReservoirStyle.cyan : ReservoirStyle.textMuted)
                 }
 
                 Spacer(minLength: 0)
@@ -775,9 +842,9 @@ private struct VesselCard: View {
                 Text(subtitle)
                     .font(.caption.weight(.medium))
                     .lineLimit(3)
-                    .foregroundStyle(.white.opacity(0.58))
+                    .foregroundStyle(ReservoirStyle.textSecondary)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(ReservoirStyle.textPrimary)
             .frame(width: 166, height: 132, alignment: .topLeading)
             .padding(14)
             .background(background, in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
@@ -793,11 +860,11 @@ private struct VesselCard: View {
     }
 
     private var background: Color {
-        active ? vessel.glowColor.opacity(0.15) : ReservoirStyle.panel.opacity(0.68)
+        active ? ReservoirStyle.cyan.opacity(0.10) : ReservoirStyle.panel
     }
 
     private var stroke: Color {
-        active ? vessel.glowColor.opacity(0.85) : .white.opacity(0.08)
+        active ? ReservoirStyle.cyan.opacity(0.70) : ReservoirStyle.hairline
     }
 }
 
@@ -811,20 +878,20 @@ private struct AchievementRow: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: ReservoirStyle.iconRadius, style: .continuous)
-                    .fill(unlocked ? ReservoirStyle.cyan.opacity(0.16) : .white.opacity(0.06))
+                    .fill(unlocked ? ReservoirStyle.cyan.opacity(0.14) : ReservoirStyle.panelSubtle)
                     .frame(width: 42, height: 42)
                 Image(systemName: unlocked ? "checkmark.seal.fill" : "lock.fill")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(unlocked ? ReservoirStyle.cyan : .white.opacity(0.4))
+                    .foregroundStyle(unlocked ? ReservoirStyle.cyan : ReservoirStyle.textMuted)
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(achievement.title)
                     .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(ReservoirStyle.textPrimary)
                 Text(unlocked ? achievement.unlock : achievement.subtitle)
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(ReservoirStyle.textSecondary)
                     .lineLimit(2)
             }
 
@@ -832,10 +899,10 @@ private struct AchievementRow: View {
 
             Text("\(achievement.days)d")
                 .font(.caption.weight(.black))
-                .foregroundStyle(unlocked ? ReservoirStyle.cyan : .white.opacity(0.58))
+                .foregroundStyle(unlocked ? ReservoirStyle.cyan : ReservoirStyle.textMuted)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 5)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(ReservoirStyle.panelSubtle, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
         .padding(12)
         .background(background, in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
@@ -843,11 +910,11 @@ private struct AchievementRow: View {
     }
 
     private var background: Color {
-        unlocked ? ReservoirStyle.cyan.opacity(0.09) : ReservoirStyle.panel.opacity(0.62)
+        unlocked ? ReservoirStyle.cyan.opacity(0.07) : ReservoirStyle.panel
     }
 
     private var stroke: Color {
-        unlocked ? ReservoirStyle.cyan.opacity(0.26) : .white.opacity(0.07)
+        unlocked ? ReservoirStyle.cyan.opacity(0.26) : ReservoirStyle.hairline
     }
 }
 
@@ -893,7 +960,7 @@ private struct BackdateSheet: View {
 
     var body: some View {
         ZStack {
-            ReservoirStyle.ink.ignoresSafeArea()
+            ReservoirStyle.canvas.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -902,11 +969,11 @@ private struct BackdateSheet: View {
                         .tracking(5)
                         .foregroundStyle(ReservoirStyle.cyan)
                     Text("Catch up your streak")
-                        .font(.system(size: 26, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 26, weight: .semibold, design: .default))
+                        .foregroundStyle(ReservoirStyle.textPrimary)
                     Text("Pick the day you started. Catching up logs every day from then through today so your streak counts them.")
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(ReservoirStyle.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -918,7 +985,6 @@ private struct BackdateSheet: View {
                 )
                 .datePickerStyle(.wheel)
                 .labelsHidden()
-                .colorScheme(.dark)
                 .frame(maxWidth: .infinity)
                 .tint(ReservoirStyle.cyan)
                 .padding(.vertical, 6)
@@ -942,7 +1008,7 @@ private struct BackdateSheet: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
-                .buttonStyle(GhostButtonStyle(tint: .white.opacity(0.7)))
+                .buttonStyle(GhostButtonStyle(tint: ReservoirStyle.textSecondary))
             }
             .padding(20)
         }
@@ -962,23 +1028,23 @@ private struct PrimaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(disabled ? Color.white.opacity(0.55) : Color(red: 0.014, green: 0.066, blue: 0.098))
+            .foregroundStyle(disabled ? ReservoirStyle.textMuted : Color.white)
             .background(background, in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous)
-                    .stroke(.white.opacity(disabled ? 0.06 : 0.34), lineWidth: 1)
+                    .stroke(disabled ? ReservoirStyle.hairline : ReservoirStyle.cyan.opacity(0.35), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(disabled ? 0 : 0.22), radius: configuration.isPressed ? 4 : 8, y: 4)
+            .shadow(color: ReservoirStyle.cyan.opacity(disabled ? 0 : 0.18), radius: configuration.isPressed ? 2 : 7, y: 3)
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 
     @ViewBuilder private var background: some View {
         if disabled {
-            ReservoirStyle.panelStrong.opacity(0.7)
+            ReservoirStyle.panelStrong
         } else {
             LinearGradient(
-                colors: [ReservoirStyle.cyanSoft, ReservoirStyle.cyan],
+                colors: [ReservoirStyle.cyanSoft, ReservoirStyle.cyanDeep],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -992,8 +1058,8 @@ private struct GhostButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(tint)
-            .background(tint.opacity(0.10), in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(tint.opacity(0.28), lineWidth: 1))
+            .background(tint.opacity(0.08), in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(tint.opacity(0.22), lineWidth: 1))
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
             .opacity(configuration.isPressed ? 0.82 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
@@ -1006,9 +1072,25 @@ private struct UtilityButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(tint)
-            .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(.white.opacity(0.12), lineWidth: 1))
+            .background(ReservoirStyle.panelSubtle, in: RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: ReservoirStyle.radius, style: .continuous).stroke(ReservoirStyle.hairline, lineWidth: 1))
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+private struct ThemeChipStyle: ButtonStyle {
+    let active: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(active ? ReservoirStyle.textPrimary : ReservoirStyle.textMuted)
+            .background(active ? ReservoirStyle.panelElevated : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(active ? ReservoirStyle.hairline : Color.clear, lineWidth: 1)
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
