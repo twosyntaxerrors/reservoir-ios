@@ -54,15 +54,17 @@ struct ReservoirHomeView: View {
 
     private var todayDashboard: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 16) {
-                heroHeader
-                reservoirHeroCard
-                statsGrid
-                milestoneCallout
-                checkInButton
+            VStack(spacing: 0) {
+                prototypeHeader
+                dayCountBlock
+                measurementVesselRow
+                nextUnlockReadout
+                prototypeActions
+                hairlineStats
+                minimalMilestone
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 18)
+            .padding(.horizontal, 24)
+            .padding(.top, 14)
             .padding(.bottom, 24)
         }
     }
@@ -200,6 +202,30 @@ struct ReservoirHomeView: View {
 
     // MARK: - Header
 
+    private var prototypeHeader: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("RESERVOIR")
+                    .font(.system(size: 16, weight: .semibold))
+                    .tracking(3.2)
+                    .foregroundStyle(ReservoirStyle.textPrimary)
+
+                Text("Discipline, made visible.")
+                    .font(.subheadline)
+                    .foregroundStyle(ReservoirStyle.textSecondary)
+            }
+
+            Spacer()
+
+            Button("Reset to 0") { showingReset = true }
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(ReservoirStyle.coral)
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+        }
+        .padding(.top, 6)
+    }
+
     private var heroHeader: some View {
         HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 7) {
@@ -233,6 +259,221 @@ struct ReservoirHomeView: View {
             .buttonStyle(UtilityButtonStyle(tint: ReservoirStyle.coral))
             .accessibilityLabel("Reset everything to zero")
         }
+    }
+
+    private var dayCountBlock: some View {
+        VStack(spacing: 8) {
+            Text("DAY")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .tracking(3.9)
+                .foregroundStyle(ReservoirStyle.textMicro)
+
+            Text(dayDisplay)
+                .font(.system(size: 90, weight: .semibold, design: .default))
+                .monospacedDigit()
+                .tracking(-4)
+                .foregroundStyle(ReservoirStyle.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+                .frame(height: 82)
+
+            Text(statusLine)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(ReservoirStyle.textSecondary)
+
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(ReservoirStyle.cyan)
+                    .frame(width: 6, height: 6)
+                Text(store.canCheckInToday ? "Ready to check in" : "Today secured")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(ReservoirStyle.cyanDeep)
+            }
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 26)
+        .padding(.bottom, 10)
+    }
+
+    private var measurementVesselRow: some View {
+        HStack(alignment: .center, spacing: 4) {
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("VESSEL")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(ReservoirStyle.textMicro)
+                Text(store.selectedVessel.title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(ReservoirStyle.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+            .frame(width: 64, alignment: .trailing)
+
+            ReservoirSpriteView(
+                streak: store.currentStreak,
+                vessel: store.selectedVessel,
+                tilt: motion.tilt,
+                angularVelocity: motion.angularVelocity,
+                relapsePulse: relapsePulse
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 318)
+            .accessibilityLabel("Graduated vessel showing current fill")
+
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressRing(
+                    progress: store.fillProgress,
+                    accent: ReservoirStyle.cyan,
+                    lineWidth: 4,
+                    label: ""
+                )
+                .frame(width: 54, height: 54)
+
+                Text("FILLED")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .tracking(1.6)
+                    .foregroundStyle(ReservoirStyle.textMicro)
+                    .padding(.leading, 3)
+            }
+            .frame(width: 64, alignment: .leading)
+        }
+        .padding(.top, 10)
+    }
+
+    private var nextUnlockReadout: some View {
+        HStack(spacing: 10) {
+            Text("NEXT UNLOCK")
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .tracking(2)
+                .foregroundStyle(ReservoirStyle.textMicro)
+            Circle()
+                .fill(ReservoirStyle.textMicro)
+                .frame(width: 3, height: 3)
+            Text(nextUnlockText)
+                .font(.system(size: 13))
+                .foregroundStyle(ReservoirStyle.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 8)
+        .padding(.bottom, 20)
+    }
+
+    private var prototypeActions: some View {
+        VStack(spacing: 10) {
+            Button {
+                registerCheckIn(on: Date())
+            } label: {
+                Text(store.canCheckInToday ? "Check In Today" : "Checked in today")
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+            }
+            .buttonStyle(PrimaryButtonStyle(disabled: !store.canCheckInToday))
+            .disabled(!store.canCheckInToday)
+
+            Button {
+                backdateSelection = store.canCheckInToday ? Date() : (Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
+                showingBackdate = true
+            } label: {
+                Text("Log a past day")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(ReservoirStyle.cyanDeep)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+            }
+            .buttonStyle(.plain)
+        }
+        .sheet(isPresented: $showingBackdate) {
+            BackdateSheet(
+                selection: $backdateSelection,
+                earliest: store.earliestCheckInDate,
+                unloggedThroughToday: { store.unloggedDaysThroughToday(from: $0) },
+                onCatchUp: {
+                    bloomCheckIn { store.checkInThroughToday(from: backdateSelection) }
+                    showingBackdate = false
+                },
+                onCancel: { showingBackdate = false }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var hairlineStats: some View {
+        HStack(spacing: 0) {
+            prototypeStat(value: "\(store.longestStreak)", label: "Longest streak")
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Rectangle()
+                .fill(ReservoirStyle.hairline)
+                .frame(width: 1)
+                .padding(.vertical, 18)
+
+            prototypeStat(value: "\(store.totalRetentionDays)", label: "Total days")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 22)
+        }
+        .padding(.top, 18)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(ReservoirStyle.hairline)
+                .frame(height: 1)
+        }
+    }
+
+    private func prototypeStat(value: String, label: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.system(size: 27, weight: .semibold))
+                .monospacedDigit()
+                .tracking(-0.5)
+                .foregroundStyle(ReservoirStyle.textPrimary)
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundStyle(ReservoirStyle.textSecondary)
+        }
+        .padding(.top, 18)
+        .padding(.bottom, 4)
+    }
+
+    private var minimalMilestone: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("NEXT MILESTONE")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(ReservoirStyle.textMicro)
+                Spacer()
+                Text("Day \(nextMilestoneDay)")
+                    .font(.system(size: 12))
+                    .monospacedDigit()
+                    .foregroundStyle(ReservoirStyle.textSecondary)
+            }
+
+            Text(store.nextAchievementTitle)
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(ReservoirStyle.textPrimary)
+                .padding(.top, 9)
+
+            MilestoneBar(progress: store.achievementProgress, accent: ReservoirStyle.cyan)
+                .frame(height: 5)
+                .padding(.top, 14)
+
+            Text("\(store.daysUntilNextAchievement) days remaining")
+                .font(.system(size: 13))
+                .monospacedDigit()
+                .foregroundStyle(ReservoirStyle.textSecondary)
+                .padding(.top, 10)
+        }
+        .padding(.top, 18)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(ReservoirStyle.hairline)
+                .frame(height: 1)
+        }
+        .padding(.top, 6)
     }
 
     // MARK: - Hero
@@ -337,6 +578,26 @@ struct ReservoirHomeView: View {
 
     private var dayDisplay: String {
         store.currentStreak < 10 ? "0\(store.currentStreak)" : "\(store.currentStreak)"
+    }
+
+    private var statusLine: String {
+        let fill = store.fillProgress
+        if store.currentStreak == 0 { return "Empty. Begin today." }
+        if fill < 0.2 { return "First light gathering." }
+        if fill < 0.55 { return "Holding the line." }
+        if fill < 0.95 { return "Nearly brimming." }
+        return "Brimming. A new vessel waits."
+    }
+
+    private var nextUnlockText: String {
+        guard let next = VesselSkin.allCases.first(where: { $0.unlockDays > store.currentStreak }) else {
+            return "Max vessel"
+        }
+        return "\(next.title) · \(next.unlockDays - store.currentStreak)d"
+    }
+
+    private var nextMilestoneDay: Int {
+        store.nextAchievement?.days ?? Achievement.all.last?.days ?? 365
     }
 
     private func statusPill(_ text: String, systemImage: String) -> some View {
@@ -620,6 +881,7 @@ private enum ReservoirStyle {
     static let textPrimary = dynamic(light: UIColor(hex: 0x191B1D), dark: UIColor(hex: 0xEAF0F2))
     static let textSecondary = dynamic(light: UIColor(hex: 0x3C4145), dark: UIColor(hex: 0xAEB8BE))
     static let textMuted = dynamic(light: UIColor(hex: 0x6A7177), dark: UIColor(hex: 0x7C878E))
+    static let textMicro = dynamic(light: UIColor(hex: 0xA2A8AD), dark: UIColor(hex: 0x565F66))
     static let hairline = dynamic(light: UIColor(hex: 0x141618).withAlphaComponent(0.08), dark: UIColor(hex: 0xEAF0F2).withAlphaComponent(0.10))
     static let ink = canvas
     static let panelStrong = dynamic(light: UIColor(hex: 0xECE9E0), dark: UIColor(hex: 0x252A30))
